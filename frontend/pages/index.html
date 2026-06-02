@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#F5F5F7" />
+  <meta name="description" content="NextGen — AI 电商内容工作台" />
+  <link rel="icon" href="/assets/image.png" />
+  <title>NextGen Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root { --primary: #007AFF; --text: #1D1D1F; --text2: #6E6E73; --text3: #99999D; --bg: #F5F5F7; --card: #FFFFFF; --muted: #F9F9FB; --border: rgba(0,0,0,0.06); --red: #FF3B30; --radius-lg: 16px; --radius-md: 10px; --radius-sm: 8px; --shadow: 0 2px 12px rgba(0,0,0,0.06); }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+/* Sidebar - white */
+.sidebar {
+  position:fixed; left:0; top:0; bottom:0; width:64px;
+  background:#FFFFFF; border-right:1px solid var(--border);
+  display:flex; flex-direction:column; align-items:center; padding:16px 10px;
+  z-index:100; box-shadow:0 1px 3px rgba(0,0,0,0.04);
+}
+.sidebar-logo { width:30px; height:30px; border-radius:6px; margin-bottom:16px; }
+.nav-item {
+  display:flex; align-items:center; justify-content:center; width:44px; height:44px;
+  border-radius:10px; color:var(--text3); cursor:pointer; text-decoration:none;
+  position:relative; transition:all 0.15s; margin-bottom:4px;
+}
+.nav-item:hover { background:rgba(0,122,255,0.06); color:var(--primary); }
+.nav-item.active { background:rgba(0,122,255,0.08); color:var(--primary); }
+.nav-item svg { width:20px; height:20px; }
+.nav-tooltip {
+  position:absolute; left:54px; top:50%; transform:translateY(-50%);
+  background:#1D1D1F; color:#fff; font-size:11px; padding:4px 10px;
+  border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0;
+  transition:opacity 0.15s;
+}
+.nav-item:hover .nav-tooltip { opacity:1; }
+
+.main { margin-left:64px; min-height:100vh; }
+.page-inner { max-width:960px; margin:0 auto; padding:40px 36px 60px; }
+
+/* Hero Banner */
+.hero-banner {
+  background:linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+  border-radius:var(--radius-lg); padding:40px 44px; margin-bottom:32px;
+  color:#fff; display:flex; align-items:center; justify-content:space-between;
+  position:relative; overflow:hidden;
+}
+.hero-banner::after {
+  content:''; position:absolute; right:-20px; top:-30px; width:200px; height:200px;
+  background:rgba(255,255,255,0.06); border-radius:50%;
+}
+.hero-banner .hb-left { position:relative; z-index:1; }
+.hero-banner h1 { font-size:28px; font-weight:800; letter-spacing:-0.5px; }
+.hero-banner p { font-size:14px; opacity:0.85; margin-top:6px; max-width:400px; line-height:1.6; }
+.hero-banner .hb-stats { display:flex; gap:28px; margin-top:16px; }
+.hero-banner .hb-stat { text-align:center; }
+.hero-banner .hb-stat strong { font-size:22px; font-weight:700; display:block; }
+.hero-banner .hb-stat span { font-size:11px; opacity:0.7; }
+
+/* Brand row (subtle) */
+.brand-row { display:flex; align-items:center; gap:8px; margin-bottom:24px; }
+.brand-row img { width:28px; height:28px; border-radius:7px; }
+.brand-row span { font-size:13px; color:var(--text2); font-weight:500; }
+
+/* Three cards - smaller, left color stripe */
+.card-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:36px; }
+.flow-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:20px 18px; text-decoration:none; transition:all 0.25s;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px;
+  color:var(--text); position:relative; overflow:hidden;
+}
+.flow-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
+.flow-card.video::before { background:var(--primary); }
+.flow-card.image::before { background:#FF6B35; }
+.flow-card.dist::before { background:#52C41A; }
+.flow-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,0.10); }
+.flow-card .fc-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+.flow-card .fc-icon.video { background:rgba(0,122,255,0.08); color:var(--primary); }
+.flow-card .fc-icon.image { background:rgba(255,107,53,0.08); color:#FF6B35; }
+.flow-card .fc-icon.dist { background:rgba(82,196,26,0.08); color:#52C41A; }
+.flow-card h3 { font-size:15px; font-weight:700; }
+.flow-card .fc-desc { font-size:12px; color:var(--text2); line-height:1.6; }
+.flow-card .fc-btn {
+  display:inline-block; padding:6px 18px; border-radius:18px; font-size:12px;
+  font-weight:600; background:var(--primary); color:#fff; align-self:flex-start;
+  transition:all 0.15s;
+}
+.flow-card:hover .fc-btn { box-shadow:0 4px 14px rgba(0,122,255,0.3); }
+
+/* Asset strip */
+.asset-section { margin-bottom:36px; }
+.asset-section h2 { font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.asset-count { font-size:11px; color:var(--text3); font-weight:400; background:var(--muted); padding:2px 8px; border-radius:10px; }
+.asset-manage { font-size:11px; color:var(--primary); font-weight:500; text-decoration:none; margin-left:auto; padding:3px 10px; border:1px solid rgba(0,122,255,0.2); border-radius:12px; transition:all 0.15s; }
+.asset-manage:hover { background:rgba(0,122,255,0.06); }
+.asset-filters { display:flex; gap:6px; margin-bottom:10px; }
+.filter-btn { padding:4px 12px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--text2); font-size:11px; cursor:pointer; transition:all 0.15s; }
+.filter-btn:hover { border-color:var(--primary); color:var(--primary); }
+.filter-btn.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+.asset-strip { display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; }
+.asset-item {
+  flex-shrink:0; width:120px; height:120px; border-radius:var(--radius-md);
+  overflow:hidden; cursor:pointer; border:2px solid transparent;
+  transition:all 0.15s; background:var(--card); position:relative;
+}
+.asset-item:hover { border-color:var(--primary); }
+.asset-item img { width:100%; height:100%; object-fit:cover; display:block; }
+.asset-item.video::after {
+  content:'▶'; position:absolute; inset:0; display:flex; align-items:center;
+  justify-content:center; background:rgba(0,0,0,0.3); color:#fff; font-size:24px; pointer-events:none;
+}
+.asset-item .delete-btn {
+  position:absolute; top:4px; right:4px; width:20px; height:20px;
+  background:rgba(0,0,0,0.6); border:none; border-radius:50%; color:#fff;
+  font-size:10px; cursor:pointer; opacity:0; transition:opacity 0.15s;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
+.asset-item:hover .delete-btn { opacity:1; }
+.asset-item .delete-btn:hover { background:var(--red); }
+
+/* Asset manager */
+.asset-manager { margin-top:8px; }
+.asset-manager-actions { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.btn-manage { padding:5px 12px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text2); font-size:11px; cursor:pointer; transition:all 0.15s; }
+.btn-manage:hover { border-color:var(--primary); color:var(--primary); }
+.btn-manage.danger { color:var(--red); border-color:rgba(255,59,48,0.3); }
+.btn-manage.danger:hover { background:#FEE; }
+.manage-info { font-size:11px; color:var(--text3); }
+.asset-manager-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; }
+.asset-manager-grid .asset-item { width:100%; height:130px; }
+.asset-manage-item.video::after { display:none; }
+.asset-manage-item.video { cursor:default; }
+.asset-manager-grid .asset-item .asset-prompt { position:absolute; bottom:0; left:0; right:0; padding:4px 6px; background:linear-gradient(transparent,rgba(0,0,0,0.75)); color:#fff; font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.asset-empty {
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:36px 24px; text-align:center;
+}
+.asset-empty svg { opacity:0.25; }
+.asset-empty p { color:var(--text3); font-size:13px; max-width:300px; }
+.asset-empty .empty-btns { display:flex; gap:10px; }
+.asset-empty .empty-btn {
+  padding:8px 18px; border-radius:20px; font-size:12px; font-weight:600;
+  cursor:pointer; text-decoration:none; transition:all 0.15s;
+}
+.asset-empty .empty-btn.primary { background:var(--primary); color:#fff; border:none; }
+.asset-empty .empty-btn.primary:hover { box-shadow:0 4px 14px rgba(0,122,255,0.3); }
+.asset-empty .empty-btn.secondary { background:var(--card); color:var(--primary); border:1px solid var(--primary); }
+.asset-empty .empty-btn.secondary:hover { background:rgba(0,122,255,0.06); }
+.asset-link { display:inline-block; margin-top:8px; font-size:12px; color:var(--primary); text-decoration:none; }
+
+/* Template section */
+.template-section { margin-bottom:40px; }
+.template-section h2 { font-size:15px; font-weight:700; margin-bottom:14px; }
+.template-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.template-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  overflow:hidden; cursor:pointer; transition:all 0.2s; text-align:left;
+}
+.template-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); border-color:rgba(0,122,255,0.2); }
+.template-card img { width:100%; height:120px; object-fit:cover; display:block; }
+.template-card .tc-body { padding:12px; }
+.template-card .tc-tag { font-size:10px; color:var(--primary); text-transform:uppercase; font-weight:700; letter-spacing:0.5px; }
+.template-card strong { font-size:14px; display:block; margin:4px 0; font-weight:700; }
+.template-card small { font-size:11px; color:var(--text3); display:block; line-height:1.4; }
+
+/* Modal */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; display:none; align-items:center; justify-content:center; }
+.modal.show { display:flex; }
+.modal img { max-width:88vw; max-height:80vh; border-radius:10px; }
+.modal-close { position:absolute; top:20px; right:20px; width:40px; height:40px; background:rgba(255,255,255,0.1); border:none; border-radius:50%; color:#fff; font-size:18px; cursor:pointer; }
+
+@media (max-width:768px) {
+  .card-row,.template-grid { grid-template-columns:1fr; }
+  .page-inner { padding:24px 16px; }
+  .hero-banner { flex-direction:column; text-align:center; padding:28px 24px; }
+  .hero-banner .hb-stats { justify-content:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar - white -->
+<aside class="sidebar">
+  <a href="/pages/index.html"><img class="sidebar-logo" src="/assets/image.png" /></a>
+  <a href="#" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
+    <span class="nav-tooltip">创意工坊</span>
+  </a>
+  <a href="/pages/distribute.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+    <span class="nav-tooltip">智能分发</span>
+  </a>
+  <a href="/pages/image-editor.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+    <span class="nav-tooltip">素材编辑</span>
+  </a>
+  <a href="/pages/settings.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <span class="nav-tooltip">设置</span>
+  </a>
+  <div style="margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:6px;">
+    <div id="userDot" style="width:10px;height:10px;border-radius:50%;background:#f0b429;" title="游客"></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-inner">
+
+    <!-- Subtle brand row -->
+    <div class="brand-row">
+      <img src="/assets/image.png" alt="NextGen" />
+      <span>NEXTGEN Studio</span>
+    </div>
+
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+      <div class="hb-left">
+        <h1>AI 电商内容工作台</h1>
+        <p>从商品图到短视频，从素材编辑到一键多平台分发，AI 全链路提效</p>
+        <div class="hb-stats">
+          <div class="hb-stat"><strong>10,000+</strong><span>创作者在用</span></div>
+          <div class="hb-stat"><strong>3min</strong><span>出片速度</span></div>
+          <div class="hb-stat"><strong>6</strong><span>平台覆盖</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Three cards - left color stripe -->
+    <div class="card-row">
+      <a href="/pages/agent.html" class="flow-card video" onclick="localStorage.removeItem('nextgen_template')">
+        <div class="fc-icon video">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <h3>做视频</h3>
+        <div class="fc-desc">商品短视频 · 直播切片 · AI 自动生成</div>
+        <span class="fc-btn">进入</span>
+      </a>
+      <a href="/pages/image-editor.html" class="flow-card image" onclick="localStorage.removeItem('nextgen_template')">
+        <div class="fc-icon image">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+        </div>
+        <h3>做图片</h3>
+        <div class="fc-desc">主图 · 详情图 · 白底图 · AI 商品图</div>
+        <span class="fc-btn">进入</span>
+      </a>
+      <a href="/pages/distribute.html" class="flow-card dist" onclick="localStorage.removeItem('nextgen_template')">
+        <div class="fc-icon dist">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <h3>去分发</h3>
+        <div class="fc-desc">小红书 · 抖音 · 快手 · 一键多平台</div>
+        <span class="fc-btn">进入</span>
+      </a>
+    </div>
+
+    <!-- Asset strip -->
+    <div class="asset-section">
+      <h2>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+        我的素材库
+        <span class="asset-count" id="assetCount"></span>
+        <a href="javascript:void(0)" class="asset-manage" id="assetManage" onclick="toggleAssetManager()" style="display:none;">管理</a>
+      </h2>
+      <!-- Filter tabs -->
+      <div class="asset-filters" id="assetFilters" style="display:none;">
+        <button class="filter-btn active" data-filter="all">全部</button>
+        <button class="filter-btn" data-filter="image">图片</button>
+        <button class="filter-btn" data-filter="video">视频</button>
+      </div>
+      <div class="asset-strip" id="assetStrip"></div>
+      <!-- Full management grid -->
+      <div class="asset-manager" id="assetManager" style="display:none;">
+        <div class="asset-manager-actions">
+          <button class="btn-manage" onclick="selectAllAssets()">全选</button>
+          <button class="btn-manage danger" onclick="deleteSelectedAssets()">删除选中</button>
+          <span class="manage-info" id="manageInfo"></span>
+        </div>
+        <div class="asset-manager-grid" id="assetManagerGrid"></div>
+        <button class="btn-manage" onclick="toggleAssetManager()" style="margin-top:12px;">收起</button>
+      </div>
+      <a href="#" class="asset-link" id="assetLink" style="display:none;">查看全部 →</a>
+    </div>
+
+    <!-- Templates with optimized titles -->
+    <div class="template-section">
+      <h2>快速开始，选一个模板</h2>
+      <div class="template-grid">
+        <div class="template-card" onclick="goPage('agent', TEMPLATES.agent1)">
+          <img src="../assets/images/template-01.jpg" />
+          <div class="tc-body">
+            <span class="tc-tag">热门</span>
+            <strong>女装新品发布 · 通勤穿搭</strong>
+            <small>面料氛围感 + 城市街拍，15秒抓住眼球</small>
+          </div>
+        </div>
+        <div class="template-card" onclick="goPage('agent', TEMPLATES.agent2)">
+          <img src="../assets/images/template-02.jpg" />
+          <div class="tc-body">
+            <span class="tc-tag">细节</span>
+            <strong>跑鞋材质特写 · 科技感大片</strong>
+            <small>微距镜头推进，鞋底黑科技一览无余</small>
+          </div>
+        </div>
+        <div class="template-card" onclick="goPage('image-editor', TEMPLATES.img1)">
+          <img src="../assets/images/template-03.jpg" />
+          <div class="tc-body">
+            <span class="tc-tag">社媒</span>
+            <strong>快节奏投放短片 · 高转化</strong>
+            <small>3秒抓住注意力，卖点密集输出促成交</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal" id="previewModal" onclick="this.classList.remove('show')">
+  <button class="modal-close" onclick="document.getElementById('previewModal').classList.remove('show')">✕</button>
+  <img id="previewImg" src="" />
+</div>
+
+<script>
+function goPage(p, template) {
+  if (template) {
+    localStorage.setItem('nextgen_template', JSON.stringify(template));
+  } else {
+    localStorage.removeItem('nextgen_template');
+  }
+  location.href = '/pages/' + p + '.html';
+}
+
+// Templates with data
+const TEMPLATES = {
+  agent1: { page:'agent', mode:'txt2img', prompt:'为女装新品做一条短视频，突出版型、垂感和通勤氛围。镜头：城市街拍 + 面料特写，15秒', style:'scene', title:'女装新品发布' },
+  agent2: { page:'agent', mode:'txt2img', prompt:'为黑色跑鞋做一条材质细节特写视频，突出鞋底科技感和运动支撑。镜头：微距 + 慢动作', style:'scene', title:'跑鞋材质特写' },
+  img1: { page:'image-editor', mode:'txt2img', prompt:'商品主图，白色纯净背景，专业摄影棚灯光，8K高清，电商白底图', style:'clean', title:'社媒投放短片' },
+};
+
+(function() {
+  let allAssets = [];
+  let currentFilter = 'all';
+  let selectedIds = new Set();
+  let managerOpen = false;
+
+  try { allAssets = JSON.parse(localStorage.getItem('nextgen_assets')||'[]'); } catch(e) {}
+  if (allAssets.length === 0) {
+    const img = JSON.parse(localStorage.getItem('nextgen_history')||'[]');
+    const vid = JSON.parse(localStorage.getItem('nextgen_videos')||'[]');
+    allAssets = [
+      ...img.slice(0,6).map((h,i)=>({type:'image',url:h.url,prompt:h.prompt,time:h.time,id:'h'+i})),
+      ...vid.slice(0,6).map((v,i)=>({type:'video',url:v.url||v.thumbnail,prompt:v.prompt,time:v.time,id:'v'+i})),
+    ];
+  }
+
+  // Render strip (first 6)
+  function renderStrip() {
+    const strip = document.getElementById('assetStrip');
+    const countEl = document.getElementById('assetCount');
+    const manageBtn = document.getElementById('assetManage');
+    const filters = document.getElementById('assetFilters');
+
+    if (allAssets.length === 0) {
+      strip.innerHTML = '<div class="asset-empty">'
+        + '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>'
+        + '<p>还没有素材，开始你的第一条 AI 创作吧</p>'
+        + '<div class="empty-btns">'
+        + '<a href="/pages/image-editor.html" class="empty-btn primary">立即做图</a>'
+        + '<a href="/pages/agent.html" class="empty-btn secondary">立即做视频</a>'
+        + '</div></div>';
+      countEl.style.display = 'none';
+      manageBtn.style.display = 'none';
+      filters.style.display = 'none';
+      return;
+    }
+
+    var filteredAssets = allAssets;
+    var imgCount = 0, vidCount = 0;
+    allAssets.forEach(function(a) { if (a.type === 'video') vidCount++; else imgCount++; });
+
+    countEl.style.display = '';
+    countEl.textContent = (imgCount > 0 ? imgCount + '图 ' : '') + (vidCount > 0 ? vidCount + '视频' : '');
+    manageBtn.style.display = '';
+    filters.style.display = '';
+
+    // Apply filter to strip
+    if (currentFilter !== 'all') {
+      filteredAssets = allAssets.filter(function(a) { return a.type === currentFilter; });
+    }
+
+    strip.innerHTML = '';
+    filteredAssets.slice(0, 6).forEach(function(a) { strip.appendChild(createAssetEl(a)); });
+
+    if (filteredAssets.length > 6) {
+      document.getElementById('assetLink').style.display = '';
+      document.getElementById('assetLink').textContent = '查看全部 ' + filteredAssets.length + ' 个 →';
+    } else {
+      document.getElementById('assetLink').style.display = 'none';
+    }
+  }
+
+  function createAssetEl(a, inManager) {
+    const d = document.createElement('div');
+    d.className = 'asset-item'+(a.type==='video'?' video':'') + (inManager ? ' asset-manage-item' : '');;
+    d.title = (a.prompt||'')+' - '+(a.time||'');
+    d.dataset.id = a.id;
+    d.innerHTML = '<img src="'+(a.url||'')+'" />'
+      + '<button class="delete-btn" onclick="event.stopPropagation();deleteAsset(\''+a.id+'\')">×</button>'
+      + (inManager ? '<div class="asset-prompt">'+(a.prompt||'').substring(0,30)+'</div><div class="asset-time" style="position:absolute;top:4px;left:4px;font-size:9px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.5);padding:1px 5px;border-radius:4px;">'+(a.time||'').substring(0,10)+'</div>' : '');
+
+    if (inManager) {
+      d.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.target.classList.contains('delete-btn')) return;
+        this.classList.toggle('selected');
+        if (this.classList.contains('selected')) selectedIds.add(a.id);
+        else selectedIds.delete(a.id);
+        document.getElementById('manageInfo').textContent = selectedIds.size > 0 ? '已选 '+selectedIds.size+' 项' : '';
+      };
+    } else {
+      d.onclick = function(e) {
+        if (e.target.classList.contains('delete-btn')) return;
+        e.preventDefault();
+        document.getElementById('previewImg').src = a.url;
+        document.getElementById('previewModal').classList.add('show');
+      };
+    }
+    return d;
+  }
+
+  window.deleteAsset = function(id) {
+    if (!confirm('确定删除这个素材？')) return;
+    allAssets = allAssets.filter(a => a.id !== id);
+    selectedIds.delete(id);
+    saveAssets();
+    renderStrip();
+    if (managerOpen) renderManager();
+  };
+
+  window.toggleAssetManager = function() {
+    managerOpen = !managerOpen;
+    const m = document.getElementById('assetManager');
+    const s = document.getElementById('assetStrip');
+    const link = document.getElementById('assetLink');
+    if (managerOpen) {
+      m.style.display = '';
+      s.style.display = 'none';
+      link.style.display = 'none';
+      document.getElementById('assetManage').textContent = '收起';
+      renderManager();
+    } else {
+      m.style.display = 'none';
+      s.style.display = '';
+      if (allAssets.length > 6) link.style.display = '';
+      document.getElementById('assetManage').textContent = '管理';
+      renderStrip();
+    }
+  };
+
+  function renderManager() {
+    const grid = document.getElementById('assetManagerGrid');
+    let filtered = currentFilter === 'all' ? allAssets : allAssets.filter(a => a.type === currentFilter);
+    grid.innerHTML = '';
+    selectedIds.clear();
+    document.getElementById('manageInfo').textContent = '';
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3);font-size:12px;">没有'+(currentFilter==='video'?'视频':'图片')+'素材</div>';
+      return;
+    }
+    filtered.forEach(a => grid.appendChild(createAssetEl(a, true)));
+  }
+
+  window.selectAllAssets = function() {
+    const items = document.querySelectorAll('#assetManagerGrid .asset-item');
+    const allSelected = selectedIds.size === items.length && items.length > 0;
+    items.forEach(el => {
+      if (allSelected) { el.classList.remove('selected'); selectedIds.delete(el.dataset.id); }
+      else { el.classList.add('selected'); selectedIds.add(el.dataset.id); }
+    });
+    document.getElementById('manageInfo').textContent = selectedIds.size > 0 ? '已选 '+selectedIds.size+' 项' : '';
+  };
+
+  window.deleteSelectedAssets = function() {
+    if (selectedIds.size === 0) return;
+    if (!confirm('确定删除选中的 '+selectedIds.size+' 个素材？')) return;
+    allAssets = allAssets.filter(a => !selectedIds.has(a.id));
+    selectedIds.clear();
+    saveAssets();
+    renderStrip();
+    if (managerOpen) renderManager();
+  };
+
+  function saveAssets() {
+    localStorage.setItem('nextgen_assets', JSON.stringify(allAssets));
+  }
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderStrip();
+      if (managerOpen) renderManager();
+    });
+  });
+
+  renderStrip();
+})();
+
+(function() {
+  const logged = localStorage.getItem('shoplive_token')==='logged_in';
+  const user = localStorage.getItem('shoplive_user')||'';
+  const dot = document.getElementById('userDot');
+  if (logged&&user){dot.style.background='#4caf6e';dot.title=user;}
+  dot.onclick = () => {
+    if (logged){if(confirm('退出登录？')){localStorage.removeItem('shoplive_token');localStorage.removeItem('shoplive_user');location.reload();}}
+    else location.href='/pages/login.html';
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#F5F5F7" />
+  <link rel="icon" href="/assets/image.png" />
+  <title>模型配置 - NextGen Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root { --bg: #F5F5F7; --card: #FFFFFF; --primary: #007AFF; --text: #1D1D1F; --text2: #6E6E73; --text3: #99999D; --border: rgba(0,0,0,0.06); --muted: #F9F9FB; --green: #34C759; --red: #FF3B30; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:64px; background:#FFFFFF; border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:16px 10px; z-index:100; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.sidebar-logo { width:30px; height:30px; border-radius:6px; margin-bottom:16px; }
+.nav-item { display:flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:10px; color:#99999D; cursor:pointer; text-decoration:none; transition:all 0.15s; margin-bottom:4px; }
+.nav-item:hover { background:rgba(0,122,255,0.06); color:#007AFF; }
+.nav-item.active { background:rgba(0,122,255,0.08); color:#007AFF; }
+.main { margin-left:64px; padding:28px 36px; max-width:860px; }
+h1 { font-size:22px; font-weight:700; margin-bottom:4px; }
+.sub { font-size:13px; color:var(--text3); margin-bottom:24px; }
+
+.tabs { display:flex; gap:0; margin-bottom:20px; }
+.tab { padding:8px 18px; border:none; background:transparent; color:var(--text3); font-size:13px; font-weight:500; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+.region-label { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:1.2px; margin:24px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+
+.provider { background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; overflow:hidden; }
+.provider-header { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; cursor:pointer; transition:background 0.15s; }
+.provider-header:hover { background:var(--muted); }
+.provider-header .chevron { transition:transform 0.2s; color:var(--text3); }
+.provider.open .provider-header .chevron { transform:rotate(180deg); }
+.provider-body { display:none; padding:0 14px 14px; flex-direction:column; gap:8px; }
+.provider.open .provider-body { display:flex; }
+.provider-name { font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; }
+.provider-dot { width:6px; height:6px; border-radius:50%; }
+.provider-rank { font-size:10px; color:var(--text3); font-weight:500; background:var(--muted); padding:2px 7px; border-radius:10px; }
+
+.row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.row label { font-size:11px; color:var(--text2); font-weight:500; white-space:nowrap; min-width:52px; }
+select, input[type="text"], input[type="password"] { padding:6px 9px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text); font-size:12px; font-family:inherit; min-width:130px; }
+select:focus, input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 2px rgba(0,122,255,.1); }
+select { cursor:pointer; }
+.pwd-wrap { position:relative; display:inline-flex; }
+.pwd-wrap input { padding-right:32px; }
+.pwd-toggle { position:absolute; right:5px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text3); cursor:pointer; font-size:12px; padding:2px 3px; }
+.endpoint { font-size:11px; color:var(--text3); padding:2px 0; }
+.endpoint strong { color:var(--text2); font-weight:500; }
+
+.btn { padding:7px 14px; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+.btn-primary { background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(0,122,255,.2); }
+.btn-primary:hover { background:#0055CC; box-shadow:0 4px 14px rgba(0,122,255,.3); }
+.btn-sm { padding:5px 10px; font-size:11px; }
+.btn-test { padding:5px 12px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text2); font-size:11px; cursor:pointer; transition:all 0.15s; }
+.btn-test:hover { border-color:var(--primary); color:var(--primary); }
+.btn-test.ok { background:#E8F8ED; border-color:var(--green); color:var(--green); }
+.btn-test.fail { background:#FEE; border-color:var(--red); color:var(--red); }
+.btn-test.loading { opacity:0.6; pointer-events:none; }
+
+.default-section { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; margin-top:20px; }
+.default-section h3 { font-size:14px; font-weight:600; margin-bottom:10px; }
+
+.custom-list { display:flex; flex-direction:column; gap:5px; }
+.custom-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--muted); border-radius:8px; font-size:12px; }
+.custom-item .name { font-weight:600; flex:1; }
+.custom-item .detail { color:var(--text3); font-size:11px; }
+.btn-danger { background:var(--red); color:#fff; font-size:11px; padding:4px 10px; }
+.custom-form { background:var(--muted); border-radius:10px; padding:14px; margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--primary); color:#fff; padding:10px 24px; border-radius:20px; font-size:13px; font-weight:600; z-index:1000; animation:toastIn .3s, toastOut .3s 2s forwards; }
+@keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } }
+@keyframes toastOut { to { opacity:0; } }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/pages/index.html"><img class="sidebar-logo" src="/assets/image.png" /></a>
+  <a href="/pages/index.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg></a>
+  <a href="/pages/distribute.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg></a>
+  <a href="/pages/image-editor.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg></a>
+  <a href="/pages/settings.html" class="nav-item active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></a>
+</aside>
+
+<main class="main">
+  <h1>模型配置</h1>
+  <p class="sub">基于 <a href="https://arena.ai/leaderboard/text" target="_blank" style="color:var(--primary);">LMSYS Arena</a> 排名配置模型</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('llm')">LLM 文案模型</button>
+    <button class="tab" onclick="switchTab('image')">图片生成模型</button>
+    <button class="tab" onclick="switchTab('video')">视频生成模型</button>
+    <button class="tab" onclick="switchTab('custom')">自定义 API</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-llm"></div>
+  <div class="tab-panel" id="panel-image"></div>
+  <div class="tab-panel" id="panel-video"></div>
+  <div class="tab-panel" id="panel-custom">
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">添加自己的 OpenAI 兼容 API 端点</p>
+    <div class="custom-form">
+      <div class="row"><label>名称</label><input type="text" id="customName" placeholder="我的模型" style="min-width:180px;" /></div>
+      <div class="row"><label>端点</label><input type="text" id="customEndpoint" placeholder="https://my-api.com/v1" style="min-width:240px;" /></div>
+      <div class="row"><label>模型名</label><input type="text" id="customModel" placeholder="model-name" style="min-width:140px;" /></div>
+      <div class="row"><label>API Key</label><input type="password" id="customKey" placeholder="sk-..." /></div>
+      <div class="row"><label>类型</label><select id="customType"><option value="llm">LLM</option><option value="image">图片</option><option value="video">视频</option></select></div>
+      <button class="btn btn-primary btn-sm" style="align-self:flex-start;" onclick="addCustom()">+ 添加</button>
+    </div>
+    <div class="custom-list" id="customList" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="default-section">
+    <h3>默认模型选择</h3>
+    <div class="row"><label>文案模型</label><select id="defaultLlm"></select></div>
+    <div class="row"><label>图片模型</label><select id="defaultImage"></select></div>
+    <div class="row"><label>视频模型</label><select id="defaultVideo"></select></div>
+  </div>
+
+  <div style="margin-top:20px; display:flex; gap:10px;">
+    <button class="btn btn-primary" onclick="saveAll()">保存配置</button>
+    <button class="btn btn-sm" style="background:var(--muted);border:1px solid var(--border);color:var(--text2);border-radius:8px;" onclick="exportConfig()" title="导出JSON">导出</button>
+  </div>
+</main>
+
+<script>
+// — Providers from LMSYS Arena rankings (May 2026) —
+const INTL_LLM = [
+  { id:'openai', name:'OpenAI', models:['gpt-5.5','gpt-5.4','gpt-5.4-mini'], endpoint:'api.openai.com', color:'#10A37F', rank:'#3 Arena', buyLink:'https://platform.openai.com/' },
+  { id:'anthropic', name:'Anthropic', models:['claude-opus-4-7','claude-sonnet-4-6'], endpoint:'api.anthropic.com', color:'#D97757', rank:'#1 Arena', buyLink:'https://console.anthropic.com/' },
+  { id:'google', name:'Google', models:['gemini-3.1-pro','gemini-2.5-pro','gemini-2.5-flash'], endpoint:'ai.google.dev', color:'#4285F4', rank:'#2 Arena', buyLink:'https://aistudio.google.com/' },
+];
+const CN_LLM = [
+  { id:'qwen', name:'阿里通义 (Qwen)', models:['qwen3.6-plus','qwen3.6-max','qwen3.5-235b'], endpoint:'dashscope.aliyuncs.com', color:'#615CED', rank:'#4 Arena', buyLink:'https://bailian.console.aliyun.com/' },
+  { id:'deepseek', name:'DeepSeek', models:['deepseek-v4-pro','deepseek-v4-flash'], endpoint:'api.deepseek.com', color:'#4D6BFE', rank:'#6 Arena', buyLink:'https://platform.deepseek.com/' },
+  { id:'minimax', name:'MiniMax', models:['MiniMax-M3'], endpoint:'api.minimax.chat', color:'#FF6B35', rank:'刚发布', buyLink:'https://platform.minimax.chat/' },
+  { id:'zhipu', name:'智谱 (GLM)', models:['GLM-5.1','GLM-5-Flash'], endpoint:'open.bigmodel.cn', color:'#3D6BF5', rank:'#9 Arena', buyLink:'https://open.bigmodel.cn/' },
+  { id:'xiaomi', name:'小米 (MiMo)', models:['MiMo-V2.5-Pro','MiMo-V2.5'], endpoint:'mimo.xiaomi.com', color:'#FF6900', rank:'开源Top10', buyLink:'https://mimo.xiaomi.com/' },
+  { id:'ernie', name:'百度文心', models:['ernie-5.1','ernie-5.0'], endpoint:'(百炼平台)', color:'#2B5CFF', rank:'#13 Arena', buyLink:'https://console.bce.baidu.com/qianfan/' },
+  { id:'moonshot', name:'月之暗面 (Moonshot)', models:['moonshot-v1-128k','moonshot-v1-32k'], endpoint:'api.moonshot.cn', color:'#8A2BE2', rank:'热门', buyLink:'https://platform.moonshot.cn/' },
+];
+const IMAGE_PROVIDERS = [
+  { id:'imagen', name:'Google Imagen', models:['imagen-4.0-ultra','imagen-4.0'], endpoint:'ai.google.dev', color:'#4285F4', rank:'Arena Top5', buyLink:'https://aistudio.google.com/' },
+  { id:'flux', name:'Flux', models:['flux-2-max','flux-2','flux-1.1-pro'], endpoint:'api.bfl.ml', color:'#1A1A1A', rank:'质量前列', buyLink:'https://api.bfl.ml/' },
+  { id:'dalle', name:'OpenAI DALL-E / GPT Image', models:['gpt-image','dall-e-3'], endpoint:'api.openai.com', color:'#10A37F', rank:'商业首选', buyLink:'https://platform.openai.com/' },
+  { id:'ideogram', name:'Ideogram', models:['ideogram-v3-quality','ideogram-v3'], endpoint:'api.ideogram.ai', color:'#FFD700', rank:'文字精准', buyLink:'https://ideogram.ai/' },
+  { id:'recraft', name:'Recraft', models:['recraft-v4.1-utility-pro','recraft-v4'], endpoint:'api.recraft.ai', color:'#1E1E1E', rank:'设计专业', buyLink:'https://recraft.ai/' },
+  { id:'midjourney', name:'Midjourney', models:['mj-v7','mj-v6.1'], color:'', rank:'社区最爱', buyLink:'https://www.midjourney.com/' },
+  { id:'sd', name:'Stability AI (SD)', models:['sd3.5-large','sd3.5-medium'], endpoint:'api.stability.ai', color:'#8962F3', rank:'开源标杆', buyLink:'https://platform.stability.ai/' },
+  { id:'seedream', name:'Seedream (字节)', models:['seedream-4.5','seedream-4.0'], color:'#FF006E', rank:'字节跳动', buyLink:'https://seedream.bytedance.com/' },
+  { id:'pixverse', name:'Pixverse', models:['pixverse-v5.6','pixverse-v5'], endpoint:'api.pixverse.ai', color:'#FF6B00', rank:'新锐', buyLink:'https://pixverse.ai/' },
+  { id:'jimeng', name:'即梦 (Jimeng)', models:['jimeng-5.0','jimeng-4.6'], color:'#FF2442', rank:'国内主力', buyLink:'https://jimeng.jianying.com/' },
+  { id:'wanx', name:'通义万相 (Wan)', models:['wan2.7-image-pro','wan2.6-t2i'], endpoint:'dashscope.aliyuncs.com', color:'#615CED', rank:'阿里生态', buyLink:'https://bailian.console.aliyun.com/' },
+  { id:'kling-image', name:'可灵图片 (Kling)', models:['kling-image-o1'], color:'#00D4FF', rank:'快手', buyLink:'https://kling.kuaishou.com/' },
+];
+const CN_IMAGE = ['seedream','jimeng','wanx','kling-image'];
+const INTL_IMAGE = ['imagen','flux','dalle','ideogram','recraft','midjourney','sd','pixverse'];
+
+const VIDEO_PROVIDERS = [
+  { id:'veo', name:'Google Veo', models:['veo-3.1-audio','veo-3'], endpoint:'ai.google.dev', color:'#4285F4', rank:'Arena Top3', buyLink:'https://deepmind.google/' },
+  { id:'runway', name:'Runway', models:['runway-gen-4.5','runway-gen-4','runway-gen4-turbo'], endpoint:'api.runwayml.com', color:'#FF00AA', rank:'创作首选', buyLink:'https://runwayml.com/' },
+  { id:'sora', name:'OpenAI Sora', models:['sora-2-pro','sora-2'], endpoint:'api.openai.com', color:'#10A37F', rank:'顶级质量', buyLink:'https://sora.com/' },
+  { id:'pika', name:'Pika', models:['pika-v2.2','pika-v2'], endpoint:'api.pika.art', color:'#FFD700', rank:'创意工具', buyLink:'https://pika.art/' },
+  { id:'ltx', name:'LTX Video', models:['ltx-2-19b','ltx-2'], endpoint:'api.lightricks.com', color:'#7B61FF', rank:'开源', buyLink:'https://lightricks.com/ltx-video' },
+  { id:'luma', name:'Luma', models:['luma-ray','luma-2'], endpoint:'api.lumalabs.ai', color:'#8B5CF6', rank:'高质量', buyLink:'https://lumalabs.ai/' },
+  { id:'pixverse', name:'Pixverse', models:['pixverse-gradient','pixverse-v5.6'], endpoint:'api.pixverse.ai', color:'#FF6B00', rank:'新锐', buyLink:'https://pixverse.ai/' },
+  { id:'minimax-video', name:'MiniMax 海螺', models:['minimax-hailuo-02','minimax-hailuo'], endpoint:'api.minimax.chat', color:'#FF6B35', rank:'国产出海', buyLink:'https://platform.minimax.chat/' },
+  { id:'seedance', name:'Seedance (字节)', models:['seedance-2.0-720p','seedance-v1.5-pro'], color:'#FF006E', rank:'字节跳动', buyLink:'https://seedance.bytedance.com/' },
+  { id:'happyhorse', name:'HappyHorse', models:['happyhorse-1.0'], color:'#8B5CF6', rank:'新兴', buyLink:'https://happyhorse.ai/' },
+  { id:'wan', name:'通义万相 (Wan)', models:['wan2.7-t2v','wan2.5-i2v-preview'], endpoint:'dashscope.aliyuncs.com', color:'#615CED', rank:'阿里', buyLink:'https://bailian.console.aliyun.com/' },
+  { id:'kling', name:'可灵 (Kling)', models:['kling-2.5-turbo-1080p','kling-v3-pro','kling-2.1'], color:'#00D4FF', rank:'国内最强', buyLink:'https://kling.kuaishou.com/' },
+  { id:'vidu', name:'Vidu', models:['vidu-q2','vidu-grad'], color:'#FF4500', rank:'新锐', buyLink:'https://vidu.cn/' },
+  { id:'jimeng-video', name:'即梦视频', models:['jimeng-video-3.0'], color:'#FF2442', rank:'字节生态', buyLink:'https://jimeng.jianying.com/' },
+];
+const CN_VIDEO = ['kling','jimeng-video','wan','vidu','minimax-video','seedance'];
+const INTL_VIDEO = ['veo','runway','sora','pika','ltx','luma','pixverse','happyhorse'];
+
+let config = { llm:{}, image:{}, video:{}, custom:[], defaults:{llm:'anthropic:claude-sonnet-4-6',image:'jimeng:jimeng-5.0',video:'jimeng-video:jimeng-video-3.0'} };
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tab:nth-child('+({llm:1,image:2,video:3,custom:4}[tab])+')').classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+function renderLLMProviders() {
+  const panel = document.getElementById('panel-llm');
+  panel.innerHTML = '';
+  panel.appendChild(createRegionLabel('国际'));
+  INTL_LLM.forEach(p => panel.appendChild(createProviderCard(p, 'llm')));
+  panel.appendChild(createRegionLabel('国内'));
+  CN_LLM.forEach(p => panel.appendChild(createProviderCard(p, 'llm')));
+}
+function renderImageProviders() {
+  const panel = document.getElementById('panel-image');
+  panel.innerHTML = '';
+  panel.appendChild(createRegionLabel('国际'));
+  IMAGE_PROVIDERS.filter(p=>INTL_IMAGE.includes(p.id)).forEach(p => panel.appendChild(createProviderCard(p,'image')));
+  panel.appendChild(createRegionLabel('国内'));
+  IMAGE_PROVIDERS.filter(p=>CN_IMAGE.includes(p.id)).forEach(p => panel.appendChild(createProviderCard(p,'image')));
+}
+function renderVideoProviders() {
+  const panel = document.getElementById('panel-video');
+  panel.innerHTML = '';
+  panel.appendChild(createRegionLabel('国际'));
+  VIDEO_PROVIDERS.filter(p=>INTL_VIDEO.includes(p.id)).forEach(p => panel.appendChild(createProviderCard(p,'video')));
+  panel.appendChild(createRegionLabel('国内'));
+  VIDEO_PROVIDERS.filter(p=>CN_VIDEO.includes(p.id)).forEach(p => panel.appendChild(createProviderCard(p,'video')));
+}
+
+function createRegionLabel(text) {
+  const d = document.createElement('div');
+  d.className = 'region-label';
+  d.textContent = text;
+  return d;
+}
+
+function createProviderCard(p, cat) {
+  const saved = (config[cat]||{})[p.id] || {};
+  const modelOpts = p.models.map(m=>'<option value="'+m+'"'+(saved.model===m?' selected':'')+'>'+m+'</option>').join('');
+  const hasKey = !!(saved.key);
+
+  const d = document.createElement('div');
+  d.className = 'provider';
+  d.innerHTML = '<div class="provider-header" onclick="this.parentElement.classList.toggle(\'open\')">'
+    + '<span class="provider-name"><span class="provider-dot" style="background:'+(p.color||'#ccc')+'"></span>'+p.name+(p.rank?' <span class="provider-rank">'+p.rank+'</span>':'')+'</span>'
+    + '<svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>'
+    + '</div>'
+    + '<div class="provider-body">'
+    + '<div class="row"><label>模型</label><select class="model-select" data-provider="'+p.id+'" data-cat="'+cat+'" onchange="onModelChange(\''+cat+'\',\''+p.id+'\',this.value)">'+modelOpts+'</select></div>'
+    + '<div class="row"><label>API Key</label><div class="pwd-wrap"><input type="password" class="key-input" data-provider="'+p.id+'" data-cat="'+cat+'" placeholder="sk-..." value="'+(saved.key||'')+'" /><button class="pwd-toggle" onclick="togglePwd(this)">&#128065;</button></div>'
+    + '<button class="btn-test" data-pid="'+p.id+'" data-cat="'+cat+'" data-endpoint="'+(p.endpoint||'')+'" onclick="testConnection(this)">'+(hasKey?'测试连接':'测试连接')+'</button></div>'
+    + (p.endpoint ? '<div class="endpoint">端点: <strong>'+p.endpoint+'</strong> <span style="font-size:10px;color:var(--text3);">(v1/chat/completions)</span></div>' : '')
+    + (p.buyLink ? '<a href="'+p.buyLink+'" target="_blank" style="display:inline-block;margin-top:4px;font-size:11px;color:var(--primary);text-decoration:none;">获取 API Key →</a>' : '')
+    + '</div>';
+  return d;
+}
+
+function renderCustom() {
+  document.getElementById('customList').innerHTML = config.custom.map((c,i) =>
+    '<div class="custom-item"><span class="name">'+c.name+'</span><span class="detail">'+c.endpoint+' · '+c.model+' · '+c.type+'</span><button class="btn-danger" onclick="removeCustom('+i+')">删除</button></div>'
+  ).join('');
+}
+
+function onModelChange(cat, pid, value) { if(!config[cat][pid]) config[cat][pid]={}; config[cat][pid].model = value; }
+function togglePwd(btn) { const inp=btn.parentElement.querySelector('input'); inp.type=inp.type==='password'?'text':'password'; }
+
+function addCustom() {
+  const n=document.getElementById('customName').value.trim(), e=document.getElementById('customEndpoint').value.trim();
+  const m=document.getElementById('customModel').value.trim(), k=document.getElementById('customKey').value.trim();
+  const t=document.getElementById('customType').value;
+  if(!n||!e||!m){toast('请填写名称、端点和模型名');return;}
+  config.custom.push({name:n,endpoint:e,model:m,key:k,type:t});
+  document.getElementById('customName').value='';document.getElementById('customEndpoint').value='';
+  document.getElementById('customModel').value='';document.getElementById('customKey').value='';
+  renderCustom();refreshDefaults();toast('已添加');
+}
+function removeCustom(i){config.custom.splice(i,1);renderCustom();refreshDefaults();}
+
+function testConnection(btn) {
+  const pid = btn.dataset.pid, cat = btn.dataset.cat;
+  const keyEl = document.querySelector('.key-input[data-provider="'+pid+'"][data-cat="'+cat+'"]');
+  const key = keyEl ? keyEl.value.trim() : '';
+  if (!key) { toast('请先填写 API Key'); return; }
+
+  btn.classList.add('loading');
+  btn.textContent = '连接中...';
+
+  const endpoint = (btn.dataset.endpoint || 'api.openai.com').replace(/^https?:\/\//,'');
+  const url = 'https://' + endpoint + '/v1/models';
+
+  fetch(url, { method:'GET', headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'} })
+    .then(r => {
+      if (r.ok) { btn.classList.add('ok'); btn.classList.remove('loading','fail'); btn.textContent = '✓ 连接成功'; }
+      else { throw new Error(r.status+' '+r.statusText); }
+    })
+    .catch(e => { btn.classList.add('fail'); btn.classList.remove('loading','ok'); btn.textContent = '✗ '+e.message.substring(0,20); })
+    .finally(() => { setTimeout(()=>{ btn.classList.remove('ok','fail','loading'); btn.textContent='测试连接'; }, 4000); });
+}
+
+function refreshDefaults() {
+  const lo=[], io=[], vo=[];
+  [...INTL_LLM, ...CN_LLM].forEach(p=>{p.models.forEach(m=>lo.push(p.id+':'+m));});
+  IMAGE_PROVIDERS.forEach(p=>{p.models.forEach(m=>io.push(p.id+':'+m));});
+  VIDEO_PROVIDERS.forEach(p=>{p.models.forEach(m=>vo.push(p.id+':'+m));});
+  config.custom.forEach(c=>{const m=c.name+':'+c.model; if(c.type==='llm')lo.push(m); if(c.type==='image')io.push(m); if(c.type==='video')vo.push(m);});
+  function fill(id,opts,def){const s=document.getElementById(id);if(!s)return;s.innerHTML=opts.map(o=>'<option value="'+o+'"'+(def===o?' selected':'')+'>'+o+'</option>').join('');}
+  fill('defaultLlm',lo,config.defaults.llm);
+  fill('defaultImage',io,config.defaults.image);
+  fill('defaultVideo',vo,config.defaults.video);
+}
+
+function saveAll() {
+  document.querySelectorAll('.key-input').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider; if(!config[c][p])config[c][p]={}; config[c][p].key=el.value.trim();});
+  document.querySelectorAll('.model-select').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider; if(!config[c][p])config[c][p]={}; config[c][p].model=el.value;});
+  config.defaults.llm=document.getElementById('defaultLlm').value;
+  config.defaults.image=document.getElementById('defaultImage').value;
+  config.defaults.video=document.getElementById('defaultVideo').value;
+  localStorage.setItem('nextgen_api_config',JSON.stringify(config));
+  toast('配置已保存');
+}
+
+function exportConfig() {
+  const b=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.download='nextgen-config-'+new Date().toISOString().slice(0,10)+'.json';a.href=URL.createObjectURL(b);a.click();toast('已导出');
+}
+
+function toast(m){const e=document.querySelector('.toast');if(e)e.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+
+// Init
+renderLLMProviders();renderImageProviders();renderVideoProviders();renderCustom();refreshDefaults();
+
+(function(){
+  try{const s=JSON.parse(localStorage.getItem('nextgen_api_config'));if(s){if(s.llm)config.llm=s.llm;if(s.image)config.image=s.image;if(s.video)config.video=s.video;if(s.custom)config.custom=s.custom;if(s.defaults)config.defaults=s.defaults;
+  renderLLMProviders();renderImageProviders();renderVideoProviders();renderCustom();refreshDefaults();
+  document.querySelectorAll('.key-input').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider;const sv=(s[c]||{})[p]||{};el.value=sv.key||'';});}}catch(e){}
+})();
+</script>
+</body>
+</html>

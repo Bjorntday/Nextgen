@@ -1,0 +1,31 @@
+.env
+.env.*
+!.env.template
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+node_modules/
+
+# Runtime-generated video exports
+video_edits/
+shoplive_video_edits/
+video_cases/
+
+# Runtime cache (preset image base64 etc.)
+backend/cache/
+
+# Backup directories
+backup-before-rename/
+*.backup-*
+*.log

@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Shoplive AI 视频生成助手 — 上传商品图，一键生成电商短视频" />
+    <meta name="theme-color" content="#0b0e14" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/assets/image.png" />
+    <title>Shoplive Agent</title>
+    <link rel="stylesheet" href="/styles/styles.css" />
+    <link rel="stylesheet" href="/styles/agent.css" />
+    <!-- Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  </head>
+  <body>
+  <script>
+  (function(){
+    var E=function(msg){var d=document.getElementById('__err');if(!d){d=document.createElement('div');d.id='__err';d.style.cssText='position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;z-index:999999;padding:12px 16px;font:13px/1.5 monospace;word-break:break-all;white-space:pre-wrap;';document.body.appendChild(d);}d.textContent+=msg+'\n';};
+    window.addEventListener('error',function(e){E('JS ERROR: '+e.message+'\n  at '+e.filename+':'+e.lineno);});
+    window.addEventListener('unhandledrejection',function(e){E('PROMISE REJECT: '+(e.reason&&e.reason.message?e.reason.message:String(e.reason)));});
+  })();
+  </script>
+    <main class="agent-page">
+      <header class="agent-topbar">
+        <div class="brand">
+          <img src="/assets/image.png" alt="Shoplive logo" />
+          <div>
+            <strong>SHOPLIVE</strong>
+            <span>Agent</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="langToggleBtn" class="lang-btn">EN</button>
+          <a class="back-link" href="/pages/index.html">返回首页</a>
+        </div>
+      </header>
+
+      <section id="workspace" class="workspace mode-chat">
+        <div class="workspace-toolbar" hidden>
+          <button id="toggleScriptTab" class="workspace-tab">分镜脚本</button>
+          <button id="toggleVideoTab" class="workspace-tab">视频编辑</button>
+        </div>
+        <aside id="scriptEditorPanel" class="editor-panel script-panel" hidden></aside>
+        <section id="videoEditorPanel" class="editor-panel video-panel" hidden></section>
+
+        <section class="chat-shell">
+          <div id="chatList" class="chat-list"></div>
+          <section id="taskQueuePanel" class="task-queue-panel" hidden>
+            <div class="task-queue-head" id="taskQueueToggleRow">
+              <div class="task-queue-head-left">
+                <button id="taskQueueCollapseBtn" class="task-queue-collapse-btn" type="button" aria-expanded="true" aria-label="收起任务列表">▾</button>
+                <div id="taskQueueTitle" class="task-queue-title">并发任务</div>
+              </div>
+              <button id="taskQueueClearBtn" class="task-queue-clear-btn" type="button">清理已完成</button>
+            </div>
+            <div id="taskQueueList" class="task-queue-list"></div>
+          </section>
+
+          <div class="composer composer-compact">
+            <div class="compact-head">
+              <button id="uploadBtn" class="ghost upload-ref-btn">参考图</button>
+              <button id="toggleProductUrlBtn" class="ghost">商品链接</button>
+              <button id="toggleHotVideoBtn" class="ghost">爆款视频</button>
+              <button id="toggleFrameBtn" class="ghost">首尾帧</button>
+              <span id="uploadHint" class="compact-hint" hidden></span>
+            </div>
+            <div class="frame-upload-panel" id="framePanel" hidden>
+              <div class="frame-slot" id="firstFrameSlot">
+                <div class="frame-label">首帧</div>
+                <div class="frame-drop" id="firstFrameDrop">
+                  <span>+</span><span>上传首帧</span>
+                </div>
+                <input id="firstFrameInput" type="file" accept="image/png,image/jpeg" hidden />
+              </div>
+              <div class="frame-slot" id="lastFrameSlot">
+                <div class="frame-label">尾帧</div>
+                <div class="frame-drop" id="lastFrameDrop">
+                  <span>+</span><span>上传尾帧</span>
+                </div>
+                <input id="lastFrameInput" type="file" accept="image/png,image/jpeg" hidden />
+              </div>
+              <button id="aiGenerateFramesBtn" class="ghost" type="button">AI 自动生成</button>
+            </div>
+            <div class="compact-link-row">
+              <input id="productUrlInput" type="url" placeholder="粘贴商品链接并解析" />
+              <button id="parseProductUrlBtn" class="ghost">解析链接</button>
+            </div>
+            <p id="linkParseStatus" class="link-parse-status" hidden aria-live="polite"></p>
+            <div class="compact-link-row hot-video-link-row">
+              <input id="hotVideoUrlInput" type="text" placeholder="粘贴爆款视频链接并解析复刻" />
+              <button id="parseHotVideoBtn" class="ghost">解析复刻</button>
+              <button id="startHotVideoRemakeBtn" class="ghost" type="button" disabled>一键复刻</button>
+            </div>
+            <p id="hotVideoParseStatus" class="link-parse-status hot-video-status" hidden aria-live="polite"></p>
+            <textarea id="chatInput" placeholder="输入视频生成提示词..." rows="3"></textarea>
+            <div class="video-engine-wrap" aria-label="video model">
+              <span class="video-engine-caption" id="videoEngineLabel">视频模型</span>
+              <div class="video-engine-inline" role="tablist">
+                <button type="button" class="engine-chip" data-video-engine="ltx" role="tab" title="LTX 2.3（ComfyUI）">LTX 2.3</button>
+                <button type="button" class="engine-chip" data-video-engine="jimeng" role="tab" title="即梦 3.0">即梦 3.0</button>
+                <button type="button" class="engine-chip active" data-video-engine="veo" role="tab" title="Veo 3.1 Fast">Veo 3.1</button>
+                <button type="button" class="engine-chip" data-video-engine="grok" role="tab" title="Grok Video">Grok</button>
+              </div>
+            </div>
+            <div class="compact-config-row">
+              <label class="compact-chip" for="aspectRatioSelect">
+                <span>比例</span>
+                <select id="aspectRatioSelect" aria-label="Aspect ratio">
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                  <option value="1:1">1:1</option>
+                </select>
+              </label>
+              <label class="compact-chip" for="durationSelect">
+                <span>视频时长</span>
+                <select id="durationSelect"></select>
+              </label>
+              <button id="sendBtn">生成视频</button>
+              <button id="enhancePromptBtn" class="ghost">提示词增强</button>
+            </div>
+            <p id="durationHint" class="duration-hint"></p>
+            <input id="imageInput" type="file" accept="image/png,image/jpeg" multiple hidden />
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <!-- 回到底部 FAB -->
+    <button id="scrollBotFab" class="scroll-bot-fab" aria-label="回到底部" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+      <span id="scrollBotBadge" class="scroll-bot-badge" hidden>0</span>
+    </button>
+
+    <!-- 参考图选择弹窗（复用 landing 结构）-->
+    <section id="agentRefModal" class="ref-modal" aria-hidden="true">
+      <div class="ref-modal-card">
+        <header class="ref-modal-head">
+          <strong data-i18n="refPanelTitle">选择参考图</strong>
+          <button id="agentCloseRefPanelBtn" class="ref-close-btn" type="button" aria-label="Close">×</button>
+        </header>
+        <div class="ref-modal-body">
+          <aside class="ref-modal-side">
+            <button id="agentRefUploadBtn" class="ref-side-btn" type="button">
+              <span class="side-icon upload" aria-hidden="true"></span>
+              <span>从本地上传</span>
+            </button>
+            <input id="agentRefFileInput" type="file" accept="image/*" multiple hidden />
+          </aside>
+          <div class="ref-modal-main">
+            <div class="ref-tabs">
+              <button id="agentRefTabUpload" class="ref-tab is-active" type="button">上传资产</button>
+              <button id="agentRefTabAi" class="ref-tab" type="button">AI 生成</button>
+            </div>
+            <div id="agentRefUploadPanel" class="ref-panel is-active">
+              <div id="agentRefUploadGrid" class="ref-grid"></div>
+            </div>
+            <div id="agentRefAiPanel" class="ref-panel">
+              <div class="ai-form-box">
+                <p class="ai-form-hint">填写 1–3 项 · AI 自动优化提示词并生成图片</p>
+                <div class="ai-form-fields">
+                  <div class="ai-form-field">
+                    <label class="ai-form-label" for="agentAiFieldRegion">模特地区</label>
+                    <div class="ai-form-input-wrap">
+                      <input id="agentAiFieldRegion" type="text" class="ai-form-input" placeholder="如：欧美、日本、东南亚…" />
+                      <div class="ai-form-chips" data-field="agent-region">
+                        <button type="button" class="ai-chip" data-value="欧美">欧美</button>
+                        <button type="button" class="ai-chip" data-value="日本">日本</button>
+                        <button type="button" class="ai-chip" data-value="东南亚">东南亚</button>
+                        <button type="button" class="ai-chip" data-value="中东">中东</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ai-form-field">
+                    <label class="ai-form-label" for="agentAiFieldCategory">主营品类</label>
+                    <div class="ai-form-input-wrap">
+                      <input id="agentAiFieldCategory" type="text" class="ai-form-input" placeholder="如：连衣裙、运动鞋、手提包…" />
+                      <div class="ai-form-chips" data-field="agent-category">
+                        <button type="button" class="ai-chip" data-value="连衣裙">连衣裙</button>
+                        <button type="button" class="ai-chip" data-value="运动鞋">运动鞋</button>
+                        <button type="button" class="ai-chip" data-value="手提包">手提包</button>
+                        <button type="button" class="ai-chip" data-value="T恤">T恤</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ai-form-field">
+                    <label class="ai-form-label" for="agentAiFieldStyle">风格</label>
+                    <div class="ai-form-input-wrap">
+                      <input id="agentAiFieldStyle" type="text" class="ai-form-input" placeholder="如：简约高级感、街头潮流、法式优雅…" />
+                      <div class="ai-form-chips" data-field="agent-style">
+                        <button type="button" class="ai-chip" data-value="简约高级感">高级感</button>
+                        <button type="button" class="ai-chip" data-value="街头潮流">街头潮流</button>
+                        <button type="button" class="ai-chip" data-value="法式优雅">法式优雅</button>
+                        <button type="button" class="ai-chip" data-value="日系清新">日系清新</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button id="agentRefAiGenerateBtn" class="ai-gen-submit-btn" type="button">
+                  <span class="ai-gen-submit-icon">✦</span>
+                  <span>AI 生成</span>
+                </button>
+              </div>
+              <div id="agentRefAiResultGrid" class="ref-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/scripts/entry/agent.main.js?v=20260309b"></script>
+  </body>
+</html>

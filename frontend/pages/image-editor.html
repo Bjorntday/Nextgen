@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NextGen Image Studio — AI 生图与图片编辑工具" />
+  <meta name="theme-color" content="#0D0D0F" />
+  <link rel="icon" href="/assets/image.png" />
+  <title>NextGen Image Studio</title>
+  <link rel="stylesheet" href="/styles/styles.css" />
+  <link rel="stylesheet" href="/styles/image-editor.css" />
+</head>
+<body>
+<script>
+(function(){
+  var E=function(msg){
+    var d=document.getElementById('__err');
+    if(!d){
+      d=document.createElement('div');
+      d.id='__err';
+      d.style.cssText='position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;z-index:999999;padding:12px 16px;font:13px/1.5 monospace;word-break:break-all;white-space:pre-wrap;';
+      document.body.appendChild(d);
+    }
+    d.textContent+=msg+'\n';
+  };
+  window.addEventListener('error',function(e){E('JS ERROR: '+e.message+'\n  at '+e.filename+':'+e.lineno);});
+  window.addEventListener('unhandledrejection',function(e){E('PROMISE REJECT: '+(e.reason&&e.reason.message?e.reason.message:String(e.reason)));});
+})();
+</script>
+
+<!-- 左侧导航 -->
+<aside class="sidebar">
+  <a href="/pages/index.html"><img class="sidebar-logo" src="/assets/image.png" alt="NextGen" /></a>
+  <a href="/pages/index.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
+    <span class="nav-tooltip">创意工坊</span>
+  </a>
+  <a href="/pages/distribute.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+    <span class="nav-tooltip">智能分发</span>
+  </a>
+  <a href="/pages/image-editor.html" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+    <span class="nav-tooltip">素材编辑</span>
+  </a>
+  <a href="/pages/settings.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <span class="nav-tooltip">设置</span>
+  </a>
+</aside>
+
+<main class="editor-page">
+
+  <!-- 顶部 Header -->
+  <header class="editor-header">
+    <div class="brand">
+      <img class="brand-logo" src="/assets/image.png" alt="NextGen" />
+      <div class="brand-text">
+        <strong>NEXTGEN</strong>
+        <span>Image Studio</span>
+      </div>
+    </div>
+    <div class="header-center">
+      <button class="tab-btn active" data-tab="ai">AI 生图</button>
+      <button class="tab-btn" data-tab="edit">图片调整</button>
+    </div>
+    <div class="header-actions">
+      <a href="/pages/index.html" class="btn-back">返回首页</a>
+    </div>
+  </header>
+
+  <!-- 主体区域：左侧工具 + 中间预览 -->
+  <section class="editor-body">
+
+    <!-- 左侧工具面板 -->
+    <aside class="tool-panel" id="toolPanel">
+
+      <!-- AI 生图模式 -->
+      <div class="tool-section" id="aiSection">
+        <div class="section-header">
+          <div class="model-chips" id="modelChips">
+            <!-- populated dynamically from settings config -->
+          </div>
+        </div>
+
+        <!-- 模式 Tab：文生图 / 图生图 / 局部重绘 -->
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-mode="txt2img">文生图</button>
+          <button class="mode-tab" data-mode="img2img">图生图</button>
+          <button class="mode-tab" data-mode="inpaint">局部重绘</button>
+        </div>
+
+        <!-- 风格预设快捷按钮 -->
+        <div class="style-presets" id="stylePresets">
+          <span class="preset-label">风格预设</span>
+          <div class="preset-btns">
+            <button class="preset-btn" data-style="clean" title="白色纯净背景">电商主图</button>
+            <button class="preset-btn" data-style="model" title="模特穿戴效果图">模特图</button>
+            <button class="preset-btn" data-style="scene" title="生活场景植入">场景图</button>
+            <button class="preset-btn" data-style="transparent" title="透明背景PNG">透明背景</button>
+          </div>
+        </div>
+
+        <!-- 提示词区域 -->
+        <div class="prompt-section">
+          <textarea class="prompt-input" id="promptInput" rows="3" placeholder="描述你想要的图片：商品外包装，白色背景，专业摄影光影，8K高清"></textarea>
+          <div class="prompt-btns">
+            <button class="btn-small" id="randomBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+              随机灵感
+            </button>
+            <button class="btn-small btn-accent" id="clearPromptBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              清空
+            </button>
+          </div>
+        </div>
+
+        <!-- 参考图上传（图生图模式显示）-->
+        <div class="ref-upload-section" id="refSection" style="display:none">
+          <div class="ref-upload-box" id="refUploadBox">
+            <svg class="ref-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+            <div class="ref-upload-text">
+              <span class="ref-upload-title">上传参考图</span>
+              <span class="ref-upload-hint">支持 JPG、PNG、WebP</span>
+            </div>
+          </div>
+          <input type="file" id="refInput" accept="image/*" hidden />
+          <div class="ref-info" id="refInfo" style="display:none">
+            <img id="refPreview" class="ref-thumb" />
+            <div class="ref-info-text">
+              <span class="ref-name" id="refName"></span>
+            </div>
+            <button class="btn-clear" id="clearRefBtn">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="style-strength" id="styleStrength" style="display:none">
+            <span class="preset-label">风格强度</span>
+            <div class="strength-btns">
+              <button class="strength-btn" data-strength="light">轻微</button>
+              <button class="strength-btn active" data-strength="medium">中等</button>
+              <button class="strength-btn" data-strength="strong">大幅</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 局部重绘画笔工具 -->
+        <div class="inpaint-section" id="inpaintSection" style="display:none">
+          <div class="inpaint-tools">
+            <span class="preset-label">涂抹要修改的区域</span>
+            <div class="brush-row">
+              <div class="brush-sizes">
+                <button class="brush-btn active" data-size="small" title="细画笔">S</button>
+                <button class="brush-btn" data-size="medium" title="中画笔">M</button>
+                <button class="brush-btn" data-size="large" title="粗画笔">L</button>
+              </div>
+              <div class="brush-hint" id="brushHint">画笔大小：20px</div>
+            </div>
+          </div>
+          <div class="inpaint-quick">
+            <span class="preset-label">快捷指令</span>
+            <div class="inpaint-btns">
+              <button class="inpaint-btn" data-action="remove-bg">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 8v8M8 12h8"/></svg>
+                去背景
+              </button>
+              <button class="inpaint-btn" data-action="change-bg">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>
+                换背景
+              </button>
+              <button class="inpaint-btn" data-action="remove-watermark">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>
+                去水印
+              </button>
+              <button class="inpaint-btn" data-action="change-color">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+                改颜色
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 比例 / 数量 / 生成按钮 -->
+        <div class="gen-controls">
+          <div class="gen-row">
+            <div class="gen-field">
+              <span class="field-label">图片比例</span>
+              <div class="ratio-btns">
+                <button class="ratio-btn" data-ratio="1:1" title="1:1 方形">1:1</button>
+                <button class="ratio-btn" data-ratio="4:3" title="4:3 横版">4:3</button>
+                <button class="ratio-btn active" data-ratio="16:9" title="16:9 横版">16:9</button>
+                <button class="ratio-btn" data-ratio="9:16" title="9:16 竖版">9:16</button>
+              </div>
+            </div>
+            <div class="gen-field" id="countField">
+              <span class="field-label">生成数量</span>
+              <div class="count-btns">
+                <button class="count-btn" data-count="1">1</button>
+                <button class="count-btn active" data-count="2">2</button>
+                <button class="count-btn" data-count="4">4</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn-generate" id="genBtn">
+            <svg class="gen-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>开始生成</span>
+            <span class="gen-hint" id="genHint">2 张图</span>
+          </button>
+        </div>
+      </div>
+      <!-- /AI 生图模式 -->
+
+      <!-- 图片调整模式 -->
+      <div class="tool-section" id="editSection" style="display:none">
+        <div class="section-header">
+          <span class="section-title">图片调整</span>
+        </div>
+        <div class="preset-row">
+          <span class="preset-label">快速预设</span>
+          <div class="preset-tags-row">
+            <button class="preset-tag active" data-preset="original">原图</button>
+            <button class="preset-tag" data-preset="bright">明亮</button>
+            <button class="preset-tag" data-preset="vivid">鲜艳</button>
+            <button class="preset-tag" data-preset="warm">暖调</button>
+            <button class="preset-tag" data-preset="cool">冷调</button>
+            <button class="preset-tag" data-preset="bw">黑白</button>
+          </div>
+        </div>
+        <div class="sliders">
+          <div class="slider-row">
+            <span class="slider-label">亮度</span>
+            <input type="range" class="slider" id="brightness" min="-100" max="100" value="0" />
+            <span class="slider-val" id="brightVal">0</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-label">对比度</span>
+            <input type="range" class="slider" id="contrast" min="-100" max="100" value="0" />
+            <span class="slider-val" id="contrastVal">0</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-label">饱和度</span>
+            <input type="range" class="slider" id="saturation" min="-100" max="100" value="0" />
+            <span class="slider-val" id="satVal">0</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-label">色温</span>
+            <input type="range" class="slider" id="temperature" min="-100" max="100" value="0" />
+            <span class="slider-val" id="tempVal">0</span>
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-action" id="resetBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            重置
+          </button>
+          <button class="btn-action primary" id="downloadBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载
+          </button>
+        </div>
+      </div>
+      <!-- /图片调整模式 -->
+
+    </aside>
+    <!-- /左侧工具面板 -->
+
+    <!-- 中间预览区 -->
+    <section class="preview-area">
+      <div class="preview-container" id="previewContainer">
+        <div class="preview-bg-pattern"></div>
+
+        <!-- 蒙版画布（局部重绘用）-->
+        <canvas id="maskCanvas" class="mask-canvas" style="display:none"></canvas>
+
+<!-- 空状态 -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon-wrap">
+            <svg class="empty-icon" id="emptyIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="empty-title" id="emptyTitle">生成的图片将在这里显示</div>
+          <div class="empty-hint">
+            <span id="emptyHintText">输入描述后点击生成</span>
+            <svg class="hint-arrow" id="hintArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          </div>
+        </div>
+
+        <!-- 生成中动画 -->
+        <div class="gen-loading" id="genLoading" style="display:none">
+          <div class="loading-spinner"></div>
+          <div class="loading-text" id="loadingText">AI 创作中…</div>
+          <div class="loading-dots" id="loadingDots">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="loading-progress">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+        </div>
+
+        <!-- 图片预览 -->
+        <div class="preview-img-wrap" id="previewWrap" style="display:none">
+          <img class="preview-main" id="previewImg" src="" alt="预览" />
+          <button class="preview-zoom" id="zoomBtn" title="全屏预览">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </div>
+
+        <!-- 结果网格 -->
+        <div class="result-grid" id="resultGrid" style="display:none"></div>
+      </div>
+
+      <!-- 历史记录按钮 -->
+      <button class="history-btn" id="historyBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span class="history-label">历史</span>
+      </button>
+    </section>
+    <!-- /中间预览区 -->
+
+  </section>
+
+</main>
+
+<!-- 全屏预览 Modal -->
+<div class="modal" id="modal" style="display:none">
+  <button class="modal-close" id="modalClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+  <img class="modal-img" id="modalImg" src="" alt="全屏预览" />
+  <div class="modal-actions">
+    <button class="modal-btn" id="modalSave">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        保存
+      </button>
+      <button class="modal-btn" id="modalDownload">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        下载
+      </button>
+  </div>
+</div>
+
+<!-- 历史记录侧边栏 -->
+<div class="history-drawer" id="historyDrawer" style="display:none">
+  <div class="history-header">
+    <span>生成历史</span>
+    <button class="btn-clear" id="clearHistoryBtn">清空</button>
+  </div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<input type="file" id="imageInput" accept="image/*" hidden />
+
+<script type="module" src="/scripts/entry/image-editor.main.js"></script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NextGen Image Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles/image-lab.css" />
+  </head>
+  <body>
+    <main class="lab-page">
+      <header class="lab-topbar">
+        <div class="brand">
+          <img class="brand-logo" src="/assets/image.png" alt="NextGen logo" />
+          <div class="brand-text">
+            <strong>NEXTGEN</strong>
+            <span>IMAGE LAB</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="langToggleBtn" class="ghost-btn">EN</button>
+          <button id="toStudioBtn" class="primary-btn" data-i18n="skipBtn">Skip to Studio</button>
+        </div>
+      </header>
+
+      <!-- ===== LTX-Video Section ===== -->
+      <section class="ltxv-shell lab-shell">
+        <aside class="panel ltxv-form-panel">
+          <div class="ltxv-header">
+            <div class="ltxv-badge">AI VIDEO</div>
+            <h2 class="ltxv-title">多模型视频生成</h2>
+            <p class="muted">LTX 2.3 · 即梦 3.x · Veo 3.1 Fast，自选引擎与参数后生成</p>
+          </div>
+
+          <label>视频描述</label>
+          <textarea id="ltxvPrompt" rows="3" placeholder="描述内容、场景、光线、镜头动作。例：一只手缓缓拿起精品手表，深色绒布背景，微距特写，工作室灯光。"></textarea>
+
+          <label>首帧图片（可选，用于图生视频）</label>
+          <div class="ltxv-upload-row">
+            <input id="ltxvImageInput" type="file" accept="image/*" style="display:none" />
+            <button type="button" id="ltxvImagePickBtn" class="ghost-btn">选择图片</button>
+            <span id="ltxvImageName" class="muted" style="font-size:12px">未选择</span>
+            <button type="button" id="ltxvImageClearBtn" class="ghost-btn" style="display:none">✕</button>
+          </div>
+
+          <label>视频引擎</label>
+          <div class="ltxv-engine-row">
+            <button type="button" class="ltxv-opt-btn active" data-engine="comfyui-ltxv">
+              LTX 2.3<span class="ltxv-opt-sub">6–20s 自定义时长</span>
+            </button>
+            <button type="button" class="ltxv-opt-btn" data-engine="jimeng">
+              即梦 3.0<span class="ltxv-opt-sub">5s / 10s</span>
+            </button>
+            <button type="button" class="ltxv-opt-btn" data-engine="veo">
+              Veo 3.1 Fast<span class="ltxv-opt-sub">8s / 16s 续写</span>
+            </button>
+          </div>
+
+          <!-- LTX settings -->
+          <div id="ltxvSettings">
+            <label>模型</label>
+            <div class="ltxv-model-row">
+              <button type="button" class="ltxv-opt-btn active" data-ltxv-model="LTX-2 (Pro)">LTX-2 Pro<span class="ltxv-opt-sub">最佳质量</span></button>
+              <button type="button" class="ltxv-opt-btn" data-ltxv-model="LTX-2 (Fast)">LTX-2 Fast<span class="ltxv-opt-sub">速度优先</span></button>
+            </div>
+
+            <label>画幅方向</label>
+            <div class="ltxv-ratio-row">
+              <button type="button" class="ltxv-opt-btn active" data-ltxv-orient="landscape">横版 16:9</button>
+              <button type="button" class="ltxv-opt-btn" data-ltxv-orient="portrait">竖版 9:16</button>
+            </div>
+
+            <label>分辨率</label>
+            <div class="ltxv-ratio-row">
+              <button type="button" class="ltxv-opt-btn active" data-ltxv-res="1920x1080">1080p</button>
+              <button type="button" class="ltxv-opt-btn" data-ltxv-res="2560x1440">1440p</button>
+              <button type="button" class="ltxv-opt-btn" data-ltxv-res="3840x2160">4K</button>
+            </div>
+
+            <div class="ltxv-row-2col">
+              <div>
+                <label>时长 <span id="ltxvDurationLabel" class="ltxv-val-badge">10s</span></label>
+                <input id="ltxvDuration" type="range" min="6" max="20" value="10" step="2" class="ltxv-slider" />
+                <div class="ltxv-slider-limits"><span>6s</span><span id="ltxvDurationMax">20s</span></div>
+              </div>
+              <div>
+                <label>帧率</label>
+                <div class="ltxv-fps-row">
+                  <button type="button" class="ltxv-opt-btn active" data-ltxv-fps="25">25fps</button>
+                  <button type="button" class="ltxv-opt-btn" data-ltxv-fps="50">50fps</button>
+                </div>
+              </div>
+            </div>
+
+            <label class="ltxv-audio-label">
+              <input id="ltxvAudio" type="checkbox" />
+              自动生成环境音效
+            </label>
+          </div>
+
+          <!-- Jimeng (即梦) settings -->
+          <div id="jimengSettings" style="display:none">
+            <label>即梦模型</label>
+            <div class="ltxv-model-row">
+              <button type="button" class="ltxv-opt-btn active" data-jimeng-model="3.0">
+                即梦 3.0<span class="ltxv-opt-sub">标准 · 2 积分</span>
+              </button>
+              <button type="button" class="ltxv-opt-btn" data-jimeng-model="3.5-pro">
+                即梦 3.5 Pro<span class="ltxv-opt-sub">高质 · 3 积分</span>
+              </button>
+            </div>
+
+            <label>画幅比例</label>
+            <div class="ltxv-ratio-row">
+              <button type="button" class="ltxv-opt-btn active" data-jimeng-ratio="16:9">横版 16:9</button>
+              <button type="button" class="ltxv-opt-btn" data-jimeng-ratio="9:16">竖版 9:16</button>
+              <button type="button" class="ltxv-opt-btn" data-jimeng-ratio="1:1">方形 1:1</button>
+            </div>
+
+            <label>时长</label>
+            <div class="ltxv-model-row">
+              <button type="button" class="ltxv-opt-btn" data-jimeng-dur="5">5 秒</button>
+              <button type="button" class="ltxv-opt-btn active" data-jimeng-dur="10">10 秒</button>
+            </div>
+          </div>
+
+          <!-- Veo settings -->
+          <div id="veoSettings" style="display:none">
+            <label>画幅方向</label>
+            <div class="ltxv-ratio-row">
+              <button type="button" class="ltxv-opt-btn active" data-veo-ratio="9:16">竖版 9:16</button>
+              <button type="button" class="ltxv-opt-btn" data-veo-ratio="16:9">横版 16:9</button>
+            </div>
+
+            <label>时长</label>
+            <div class="ltxv-model-row">
+              <button type="button" class="ltxv-opt-btn active" data-veo-dur="8">8 秒<span class="ltxv-opt-sub">单段直出</span></button>
+              <button type="button" class="ltxv-opt-btn" data-veo-dur="16">16 秒<span class="ltxv-opt-sub">续写拼接</span></button>
+            </div>
+          </div>
+
+          <button id="ltxvGenerateBtn" class="primary-btn large">生成视频</button>
+        </aside>
+
+        <section class="panel ltxv-result-panel">
+          <div class="ltxv-result-header">
+            <h3>生成结果</h3>
+            <span id="ltxvResultMeta" class="muted"></span>
+          </div>
+
+          <div class="progress-wrap" id="ltxvProgressWrap" style="display:none">
+            <div id="ltxvProgressBar" class="progress-bar ltxv-progress-anim"></div>
+          </div>
+          <p id="ltxvStatusText" class="muted ltxv-status">等待生成…</p>
+
+          <div id="ltxvResultArea" class="ltxv-result-area">
+            <div class="ltxv-placeholder">
+              <div class="ltxv-placeholder-icon">▶</div>
+              <p class="muted">生成后视频将在此处播放</p>
+            </div>
+          </div>
+
+          <div id="ltxvActions" class="ltxv-actions" style="display:none">
+            <a id="ltxvDownloadBtn" class="ghost-btn" download>下载视频</a>
+            <button id="ltxvExtendBtn" class="ghost-btn">延长视频 +5s</button>
+            <button id="ltxvToStudioBtn" class="ghost-btn">发送到编辑台</button>
+          </div>
+        </section>
+      </section>
+      <!-- ===== /LTX-Video Section ===== -->
+
+      <section class="lab-shell">
+        <aside class="panel form-panel">
+          <div class="stepper">
+            <span class="step active" data-i18n="step1">1. 生成商品图</span>
+            <span class="arrow">→</span>
+            <span class="step" data-i18n="step2">2. 生成营销视频</span>
+          </div>
+          <h2 data-i18n="title">实时生成商品图</h2>
+          <p class="muted" data-i18n="desc">先完成生图，再自动跳转到视频生成工作台。</p>
+
+          <label data-i18n="uploadLabel">上传商品图片（1-3张）</label>
+          <input id="productImageInput" type="file" accept="image/*" multiple />
+
+          <label data-i18n="productNameLabel">商品名称</label>
+          <input id="productNameInput" data-i18n-placeholder="productNamePh" placeholder="如：法式复古收腰连衣裙" />
+
+          <label data-i18n="pointLabel">商品卖点（1-6个）</label>
+          <input id="sellingPointsInput" data-i18n-placeholder="sellingPointsPh" placeholder="补水、便携" />
+          <div id="pointSuggestions" class="point-suggestions"></div>
+
+          <label data-i18n="targetUserLabel">目标用户</label>
+          <input id="targetUserInput" data-i18n-placeholder="targetUserPh" placeholder="如：18-30岁女性" />
+
+          <label data-i18n="salesRegionLabel">销售地区</label>
+          <input id="salesRegionInput" data-i18n-placeholder="salesRegionPh" placeholder="如：东南亚" />
+
+          <label data-i18n="templateLabel">商品风格模版</label>
+          <div id="templateButtons" class="template-buttons">
+            <button type="button" class="template-btn active" data-template="clean">Clean</button>
+            <button type="button" class="template-btn" data-template="lifestyle">Lifestyle</button>
+            <button type="button" class="template-btn" data-template="premium">Premium</button>
+            <button type="button" class="template-btn" data-template="social">Social</button>
+          </div>
+
+          <label data-i18n="stylePresetLabel">风格预设</label>
+          <div id="stylePresets" class="style-presets">
+            <button type="button" class="style-preset-btn active" data-preset="main" data-i18n="presetMain">电商主图</button>
+            <button type="button" class="style-preset-btn" data-preset="model" data-i18n="presetModel">模特图</button>
+            <button type="button" class="style-preset-btn" data-preset="scene" data-i18n="presetScene">场景图</button>
+            <button type="button" class="style-preset-btn" data-preset="transparent" data-i18n="presetTransparent">透明背景</button>
+          </div>
+
+          <label data-i18n="imageCountLabel">生图数量</label>
+          <div id="imageCountRow" class="count-row">
+            <button type="button" class="count-btn" data-count="1">1 张</button>
+            <button type="button" class="count-btn active" data-count="2">2 张</button>
+            <button type="button" class="count-btn" data-count="4">4 张</button>
+          </div>
+
+          <label data-i18n="styleStrengthLabel">风格强度</label>
+          <div id="styleStrengthRow" class="strength-row">
+            <button type="button" class="strength-btn" data-strength="light">轻微</button>
+            <button type="button" class="strength-btn active" data-strength="medium">中等</button>
+            <button type="button" class="strength-btn" data-strength="strong">大幅</button>
+          </div>
+
+          <label data-i18n="modifyLabel">修改指令</label>
+          <div id="modifyButtons" class="modify-buttons">
+            <button type="button" class="modify-btn" data-action="remove_bg" data-i18n="removeBg">去背景</button>
+            <button type="button" class="modify-btn" data-action="change_bg" data-i18n="changeBg">换背景</button>
+            <button type="button" class="modify-btn" data-action="remove_watermark" data-i18n="removeWatermark">去水印</button>
+            <button type="button" class="modify-btn" data-action="change_color" data-i18n="changeColor">改颜色</button>
+          </div>
+
+          <label data-i18n="inpaintLabel">画笔涂抹（局部重绘）</label>
+          <div id="inpaintTools" class="inpaint-tools">
+            <canvas id="inpaintCanvas" class="inpaint-canvas" width="380" height="280"></canvas>
+            <div class="inpaint-toolbar">
+              <button type="button" id="inpaintBrushBtn" class="tool-btn active">画笔</button>
+              <button type="button" id="inpaintEraserBtn" class="tool-btn">橡皮擦</button>
+              <input type="range" id="inpaintBrushSize" min="5" max="50" value="20" class="brush-size-slider" />
+              <button type="button" id="inpaintClearBtn" class="tool-btn">清除</button>
+            </div>
+          </div>
+
+          <button id="generateBtn" class="primary-btn large" data-i18n="generateBtn">实时生成商品图</button>
+        </aside>
+
+        <section class="panel result-panel">
+          <h3 data-i18n="qualityTitle">图片质量检测</h3>
+          <div id="qualityList" class="quality-list"></div>
+
+          <h3 data-i18n="progressTitle">生成进度</h3>
+          <div class="progress-meta">
+            <span id="etaText" class="muted">预计剩余耗时 -- s</span>
+          </div>
+          <div class="progress-wrap">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+          <p id="statusText" class="muted" data-i18n="idleText">Idle</p>
+
+          <h3 data-i18n="resultTitle">生成结果</h3>
+          <div id="resultGrid" class="result-grid"></div>
+
+          <h3 data-i18n="historyTitle">历史记录</h3>
+          <div id="historyList" class="history-list"></div>
+
+          <div class="next-actions">
+            <button id="gotoStudioBtn" class="primary-btn" disabled data-i18n="gotoBtn">
+              进入视频生成
+            </button>
+            <span id="autoJumpText" class="muted"></span>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/scripts/entry/image-lab.main.js"></script>
+    <script type="module" src="/scripts/modules/ltxv/index.js"></script>
+  </body>
+</html>
