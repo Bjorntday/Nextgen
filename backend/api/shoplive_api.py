@@ -7,8 +7,8 @@ from typing import Callable, Dict, Tuple
 
 from flask import jsonify, request
 
-from shoplive.backend.async_executor import _TTLCache
-from shoplive.backend.audit import AuditedOp
+from backend.async_executor import _TTLCache
+from backend.audit import AuditedOp
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def _build_shoplive_video_prompt_via_llm(
     shoplive_video_system_prompt: str,
     call_litellm_chat: Callable[..., Tuple[int, Dict]],
 ) -> Tuple[int, Dict]:
-    from shoplive.backend.briefing import pick_core_selling_points, summarize_storyboard
+    from backend.briefing import pick_core_selling_points, summarize_storyboard
 
     selling_points = pick_core_selling_points(normalized.get("selling_points", []), limit=2)
     aspect_ratio = str(normalized.get("aspect_ratio", "16:9") or "16:9").strip()

@@ -20,10 +20,10 @@ from flask import Response, g, jsonify, request, stream_with_context
 from google.cloud import storage
 from google.oauth2 import service_account
 
-from shoplive.backend.audit import audit_log
-from shoplive.backend.common.helpers import mitigate_veo_temporal_flicker
-from shoplive.backend.validation import validate_request
-from shoplive.backend.schemas import VeoStartRequest, VeoStatusRequest
+from backend.audit import audit_log
+from backend.common.helpers import mitigate_veo_temporal_flicker
+from backend.validation import validate_request
+from backend.schemas import VeoStartRequest, VeoStatusRequest
 
 
 def _extract_vertex_predict_error_message(data: object) -> str:
@@ -723,7 +723,7 @@ def register_veo_routes(
 
             async_mode = bool(payload.get("async_mode", False))
             if async_mode:
-                from shoplive.backend.async_executor import get_executor
+                from backend.async_executor import get_executor
                 job_id = f"chain-job-{uuid.uuid4().hex[:12]}"
                 with _chain_jobs_lock:
                     _chain_jobs[job_id] = {
@@ -1389,7 +1389,7 @@ def register_veo_routes(
             if not m:
                 return json_error("gcs_uri 格式错误")
             bucket_name, blob_name = m.group(1), m.group(2)
-            from shoplive.backend.common.helpers import _get_gcs_client
+            from backend.common.helpers import _get_gcs_client
             client = _get_gcs_client(key_file)
             blob = client.bucket(bucket_name).blob(blob_name)
             blob.reload()
@@ -1843,7 +1843,7 @@ def register_veo_routes(
                     signed = ""
                 return {"label": seg_label, "gcs_uri": uri, "signed_url": signed, "operation_name": op}
 
-            from shoplive.backend.async_executor import get_executor
+            from backend.async_executor import get_executor
             _pool = get_executor()
             futures = {
                 _pool.submit(_submit_and_poll, prompt_a, "A"): "A",

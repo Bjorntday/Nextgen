@@ -10,7 +10,7 @@ and compliance. Implements the article's "审计与可观测" principle:
 - Persistent audit log for post-mortem analysis
 
 Usage:
-    from shoplive.backend.audit import audit_log, start_trace, get_trace_id
+    from backend.audit import audit_log, start_trace, get_trace_id
 
     # In Flask before_request:
     start_trace()

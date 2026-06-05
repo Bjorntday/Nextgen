@@ -7,7 +7,7 @@ with meaningful errors, per "一文读懂 Agent Tools" type-safety principle.
 import pytest
 from pydantic import ValidationError
 
-from shoplive.backend.schemas import (
+from backend.schemas import (
     AgentChatRequest,
     ImageInsightRequest,
     ProductInsightRequest,

@@ -92,7 +92,7 @@ def _ffmpeg_lavfi_audio(duration: int = 5) -> str:
 
 @pytest.fixture(scope="module")
 def client():
-    from shoplive.backend.web_app import create_app
+    from backend.web_app import create_app
     app = create_app()
     app.config["TESTING"] = True
     with app.test_client() as c:
@@ -602,12 +602,12 @@ class TestTimelineRenderAsync:
     def test_async_job_queue_limit_evicts_old_jobs(self, client, vid_audio):
         """When queue is at TIMELINE_JOB_MAX, oldest terminal job is evicted, new job accepted."""
         from unittest.mock import patch
-        from shoplive.backend.web_app import create_app
+        from backend.web_app import create_app
         _app = create_app()
 
         # Find the timeline_jobs dict in registered closure
         # We'll patch the constant to a tiny limit for this test
-        import shoplive.backend.api.video_edit_api as _ve_mod
+        import backend.api.video_edit_api as _ve_mod
         with _app.test_client() as _c:
             # Submit 3 quick jobs that will complete
             submitted = []
@@ -752,7 +752,7 @@ class TestVideoASR:
             "candidates": [{"content": {"parts": [{"text": text}]}}]
         }
         return (
-            patch("shoplive.backend.infra.get_access_token", return_value="fake-token"),
+            patch("backend.infra.get_access_token", return_value="fake-token"),
             patch("requests.post", return_value=mock_resp),
         )
 
@@ -816,7 +816,7 @@ class TestVideoASR:
         from unittest.mock import patch, MagicMock
         mock_resp = MagicMock()
         mock_resp.raise_for_status.side_effect = _req.exceptions.HTTPError("403 Forbidden")
-        with patch("shoplive.backend.infra.get_access_token", return_value="fake-token"), \
+        with patch("backend.infra.get_access_token", return_value="fake-token"), \
              patch("requests.post", return_value=mock_resp):
             r = client.post(self.EP, json={"video_url": vid_silent, "project_id": "test-proj"})
         assert r.status_code == 500
@@ -963,7 +963,7 @@ class TestVideoOverlayImage:
         """image_url path uses fetch_image_as_base64 — mock network, no real HTTP."""
         from unittest.mock import patch
         with patch(
-            "shoplive.backend.common.helpers.fetch_image_as_base64",
+            "backend.common.helpers.fetch_image_as_base64",
             return_value=(tiny_png, "image/png"),
         ):
             r = client.post(self.EP, json={
@@ -1193,7 +1193,7 @@ class TestEscapeDrawtext:
     """escape_drawtext_text must safely handle all special characters."""
 
     def _escape(self, text: str) -> str:
-        from shoplive.backend.common.helpers import escape_drawtext_text
+        from backend.common.helpers import escape_drawtext_text
         return escape_drawtext_text(text)
 
     def test_backslash_escaped(self):
@@ -1263,7 +1263,7 @@ class TestBuildDrawtextFilter:
     """_build_drawtext_filter must produce correct ffmpeg drawtext string for each style."""
 
     def _build(self, **kwargs):
-        from shoplive.backend.api.video_edit_api import _build_drawtext_filter
+        from backend.api.video_edit_api import _build_drawtext_filter
         defaults = dict(
             text="Test", fontsize=24, fontcolor="#ffffff", alpha=0.9,
             x_expr="10", y_expr="10",
@@ -1318,7 +1318,7 @@ class TestBuildDrawtextFilter:
         fake_font = tmp_path / "fake.ttf"
         fake_font.write_bytes(b"FAKE")
         # Patch _FONT_CANDIDATES to use our temp font
-        import shoplive.backend.api.video_edit_api as ve
+        import backend.api.video_edit_api as ve
         original = ve._FONT_CANDIDATES.get("sans", [])
         ve._FONT_CANDIDATES["sans"] = [str(fake_font)]
         try:
@@ -1330,7 +1330,7 @@ class TestBuildDrawtextFilter:
 
     def test_no_fontfile_when_no_path_exists(self):
         """When no candidate path exists, fontfile= is omitted (ffmpeg uses default)."""
-        import shoplive.backend.api.video_edit_api as ve
+        import backend.api.video_edit_api as ve
         original = ve._FONT_CANDIDATES.get("mono", [])
         ve._FONT_CANDIDATES["mono"] = ["/nonexistent/path/font.ttf"]
         try:
@@ -1347,7 +1347,7 @@ class TestBuildDrawtextFilter:
 class TestResolveFontPath:
 
     def _resolve(self, key):
-        from shoplive.backend.api.video_edit_api import _resolve_font_path
+        from backend.api.video_edit_api import _resolve_font_path
         return _resolve_font_path(key)
 
     def test_unknown_key_returns_empty(self):
@@ -1379,13 +1379,13 @@ class TestGCSDownloadRetry:
 
     def test_succeeds_on_first_try(self, tmp_path):
         from unittest.mock import MagicMock, patch
-        from shoplive.backend.common.helpers import download_gcs_blob_to_file
+        from backend.common.helpers import download_gcs_blob_to_file
 
         out = tmp_path / "out.mp4"
         mock_blob = MagicMock()
         mock_blob.download_to_filename.return_value = None  # success
 
-        with patch("shoplive.backend.common.helpers._get_gcs_client") as mc:
+        with patch("backend.common.helpers._get_gcs_client") as mc:
             mc.return_value.bucket.return_value.blob.return_value = mock_blob
             result = download_gcs_blob_to_file("gs://bucket/file.mp4", out, "key.json")
 
@@ -1394,7 +1394,7 @@ class TestGCSDownloadRetry:
 
     def test_retries_on_transient_error_then_succeeds(self, tmp_path):
         from unittest.mock import MagicMock, patch, call
-        from shoplive.backend.common.helpers import download_gcs_blob_to_file
+        from backend.common.helpers import download_gcs_blob_to_file
 
         out = tmp_path / "out.mp4"
         mock_blob = MagicMock()
@@ -1405,7 +1405,7 @@ class TestGCSDownloadRetry:
             None,  # success
         ]
 
-        with patch("shoplive.backend.common.helpers._get_gcs_client") as mc, \
+        with patch("backend.common.helpers._get_gcs_client") as mc, \
              patch("time.sleep"):  # skip retry waits in tests
             mc.return_value.bucket.return_value.blob.return_value = mock_blob
             result = download_gcs_blob_to_file("gs://bucket/file.mp4", out, "key.json")
@@ -1415,14 +1415,14 @@ class TestGCSDownloadRetry:
 
     def test_raises_after_max_attempts(self, tmp_path):
         from unittest.mock import MagicMock, patch
-        from shoplive.backend.common.helpers import download_gcs_blob_to_file
+        from backend.common.helpers import download_gcs_blob_to_file
         import pytest
 
         out = tmp_path / "out.mp4"
         mock_blob = MagicMock()
         mock_blob.download_to_filename.side_effect = ConnectionError("always fails")
 
-        with patch("shoplive.backend.common.helpers._get_gcs_client") as mc, \
+        with patch("backend.common.helpers._get_gcs_client") as mc, \
              patch("time.sleep"):
             mc.return_value.bucket.return_value.blob.return_value = mock_blob
             with pytest.raises(ConnectionError):
@@ -1431,7 +1431,7 @@ class TestGCSDownloadRetry:
         assert mock_blob.download_to_filename.call_count == 3  # 3 attempts exhausted
 
     def test_invalid_uri_raises_value_error(self, tmp_path):
-        from shoplive.backend.common.helpers import download_gcs_blob_to_file
+        from backend.common.helpers import download_gcs_blob_to_file
         import pytest
 
         with pytest.raises(ValueError, match="Invalid GCS URI"):
@@ -1612,7 +1612,7 @@ class TestBuildDrawtextFilterAlpha:
     """Verify alpha is passed correctly (not double-divided)."""
 
     def _build(self, alpha, **kwargs):
-        from shoplive.backend.api.video_edit_api import _build_drawtext_filter
+        from backend.api.video_edit_api import _build_drawtext_filter
         return _build_drawtext_filter(
             text="Test", fontsize=24, fontcolor="#fff",
             alpha=alpha, x_expr="10", y_expr="10",

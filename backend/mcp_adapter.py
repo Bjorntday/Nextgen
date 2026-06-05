@@ -17,8 +17,8 @@ MCP Tool Definition format:
 
 from typing import Any, Dict, List, Optional
 
-from shoplive.backend.tool_registry import TOOL_REGISTRY, SKILL_DEFINITIONS
-from shoplive.backend.schemas import TOOL_SCHEMAS
+from backend.tool_registry import TOOL_REGISTRY, SKILL_DEFINITIONS
+from backend.schemas import TOOL_SCHEMAS
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +223,7 @@ def _execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
     view_name, endpoint_path = tool_endpoint_map[tool_name]
 
     try:
-        from shoplive.backend.web_app import app
+        from backend.web_app import app
         import json
 
         with app.test_request_context(endpoint_path, method="POST", json=arguments):

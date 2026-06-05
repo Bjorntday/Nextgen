@@ -19,11 +19,11 @@ def _patch_llm(return_value=None, side_effect=None):
     """Patch call_litellm_chat via patch.object on the already-imported module.
 
     Using string-path patch() doesn't work here because the endpoint does
-    ``import shoplive.backend.common.helpers as _h`` at runtime and calls
+    ``import backend.common.helpers as _h`` at runtime and calls
     ``_h.call_litellm_chat``.  patch.object against the live module object
     (from sys.modules) is the correct approach.
     """
-    import shoplive.backend.common.helpers as _helpers_mod
+    import backend.common.helpers as _helpers_mod
     kwargs = {}
     if return_value is not None:
         kwargs["return_value"] = return_value
@@ -38,7 +38,7 @@ def _patch_llm(return_value=None, side_effect=None):
 
 class TestAgentRunRequest:
     def _make(self, **kwargs):
-        from shoplive.backend.schemas import AgentRunRequest
+        from backend.schemas import AgentRunRequest
         return AgentRunRequest(**kwargs)
 
     def test_defaults(self):
@@ -85,13 +85,13 @@ class TestAgentRunRequest:
 
 class TestBuildOpenaiTools:
     def test_returns_list(self):
-        from shoplive.backend.tool_registry import build_openai_tools
+        from backend.tool_registry import build_openai_tools
         tools = build_openai_tools()
         assert isinstance(tools, list)
         assert len(tools) > 0
 
     def test_tool_format(self):
-        from shoplive.backend.tool_registry import build_openai_tools
+        from backend.tool_registry import build_openai_tools
         tools = build_openai_tools(["export_edited_video"])
         assert len(tools) == 1
         t = tools[0]
@@ -103,24 +103,24 @@ class TestBuildOpenaiTools:
         assert "video_url" in fn["parameters"]["properties"]
 
     def test_whitelist_filter(self):
-        from shoplive.backend.tool_registry import build_openai_tools
+        from backend.tool_registry import build_openai_tools
         tools = build_openai_tools(["export_edited_video", "render_video_timeline"])
         names = {t["function"]["name"] for t in tools}
         assert names == {"export_edited_video", "render_video_timeline"}
 
     def test_empty_whitelist_returns_all(self):
-        from shoplive.backend.tool_registry import build_openai_tools
+        from backend.tool_registry import build_openai_tools
         all_tools = build_openai_tools()
         none_filter = build_openai_tools(None)
         assert len(all_tools) == len(none_filter)
 
     def test_unknown_tool_excluded(self):
-        from shoplive.backend.tool_registry import build_openai_tools
+        from backend.tool_registry import build_openai_tools
         tools = build_openai_tools(["nonexistent_tool"])
         assert tools == []
 
     def test_required_fields_populated(self):
-        from shoplive.backend.tool_registry import build_openai_tools
+        from backend.tool_registry import build_openai_tools
         tools = build_openai_tools(["generate_video"])
         fn = tools[0]["function"]
         assert "prompt" in fn["parameters"]["required"]
@@ -139,11 +139,11 @@ class TestExtractToolCalls:
         return {"choices": [{"message": msg}]}
 
     def test_no_tool_calls(self):
-        from shoplive.backend.common.helpers import extract_tool_calls
+        from backend.common.helpers import extract_tool_calls
         assert extract_tool_calls(self._resp()) == []
 
     def test_tool_calls_returned(self):
-        from shoplive.backend.common.helpers import extract_tool_calls
+        from backend.common.helpers import extract_tool_calls
         tc = [{"id": "call_1", "type": "function",
                "function": {"name": "export_edited_video", "arguments": "{}"}}]
         result = extract_tool_calls(self._resp(tool_calls=tc))
@@ -151,12 +151,12 @@ class TestExtractToolCalls:
         assert result[0]["function"]["name"] == "export_edited_video"
 
     def test_empty_choices(self):
-        from shoplive.backend.common.helpers import extract_tool_calls
+        from backend.common.helpers import extract_tool_calls
         assert extract_tool_calls({}) == []
         assert extract_tool_calls({"choices": []}) == []
 
     def test_null_tool_calls(self):
-        from shoplive.backend.common.helpers import extract_tool_calls
+        from backend.common.helpers import extract_tool_calls
         assert extract_tool_calls(self._resp(tool_calls=None)) == []
 
 
@@ -166,7 +166,7 @@ class TestExtractToolCalls:
 
 @pytest.fixture(scope="module")
 def client():
-    from shoplive.backend.web_app import create_app
+    from backend.web_app import create_app
     app = create_app()
     app.config["TESTING"] = True
     with app.test_client() as c:
@@ -272,7 +272,7 @@ class TestAgentRunEndpoint:
         fake_result = {"ok": True, "video_url": "http://localhost/video-edits/out.mp4"}
 
         with _patch_llm(side_effect=call_seq), patch(
-            "shoplive.backend.api.agent_api._execute_agent_tool",
+            "backend.api.agent_api._execute_agent_tool",
             return_value=(True, fake_result),
         ) as mock_exec:
             r = client.post(self.EP, json={
@@ -357,14 +357,14 @@ class TestAgentRunEndpoint:
     # ---- _execute_agent_tool unit ----
 
     def test_execute_unknown_tool_returns_error(self):
-        from shoplive.backend.api.agent_api import _execute_agent_tool
+        from backend.api.agent_api import _execute_agent_tool
         ok, result = _execute_agent_tool("nonexistent_tool", {})
         assert ok is False
         assert "error" in result
 
     def test_execute_agent_tool_not_registered_view(self):
         """View not in app → graceful error, not exception."""
-        from shoplive.backend.api.agent_api import _execute_agent_tool
+        from backend.api.agent_api import _execute_agent_tool
         ok, result = _execute_agent_tool("export_edited_video", {"video_url": ""})
         assert isinstance(ok, bool)
         assert isinstance(result, dict)
@@ -373,7 +373,7 @@ class TestAgentRunEndpoint:
         """Tool that exceeds timeout returns TOOL_TIMEOUT error_code."""
         import time
         from unittest.mock import patch
-        from shoplive.backend.api.agent_api import _execute_agent_tool, _TOOL_ENDPOINT_MAP
+        from backend.api.agent_api import _execute_agent_tool, _TOOL_ENDPOINT_MAP
 
         # Patch _TOOL_ENDPOINT_MAP to include a fake slow tool
         fake_map = dict(_TOOL_ENDPOINT_MAP)
@@ -384,8 +384,8 @@ class TestAgentRunEndpoint:
             from flask import jsonify
             return jsonify({"ok": True}), 200
 
-        with patch("shoplive.backend.api.agent_api._TOOL_ENDPOINT_MAP", fake_map):
-            from shoplive.backend.web_app import app as _app
+        with patch("backend.api.agent_api._TOOL_ENDPOINT_MAP", fake_map):
+            from backend.web_app import app as _app
             _app.view_functions["api_video_edit_export_slow"] = _slow_view
             fake_map["export_edited_video"] = ("api_video_edit_export_slow", "/api/video/edit/export")
             ok, result = _execute_agent_tool("export_edited_video", {}, timeout_seconds=0.05)
@@ -394,7 +394,7 @@ class TestAgentRunEndpoint:
         assert result.get("error_code") == "TOOL_TIMEOUT"
 
     def test_execute_unknown_tool_has_error_code(self):
-        from shoplive.backend.api.agent_api import _execute_agent_tool
+        from backend.api.agent_api import _execute_agent_tool
         ok, result = _execute_agent_tool("nonexistent_tool", {})
         assert ok is False
         assert result.get("error_code") == "UNKNOWN_TOOL"
@@ -411,7 +411,7 @@ class TestAgentRunEndpoint:
         fake_result = {"ok": True, "video_url": "http://localhost/out.mp4"}
 
         with _patch_llm(side_effect=call_seq), patch(
-            "shoplive.backend.api.agent_api._execute_agent_tool",
+            "backend.api.agent_api._execute_agent_tool",
             return_value=(True, fake_result),
         ) as mock_exec:
             r = client.post(self.EP, json={
@@ -486,7 +486,7 @@ class TestAgentRunEndpoint:
         fake_result = {"ok": True, "video_url": "http://localhost/out.mp4"}
 
         with _patch_llm(side_effect=call_seq), patch(
-            "shoplive.backend.api.agent_api._execute_agent_tool",
+            "backend.api.agent_api._execute_agent_tool",
             return_value=(True, fake_result),
         ):
             r = client.post(self.EP, json={
@@ -539,7 +539,7 @@ class TestAgentRunEndpoint:
         fake_error = {"ok": False, "error": "ffmpeg failed", "error_code": "RENDER_FAILED"}
 
         with _patch_llm(side_effect=call_seq), patch(
-            "shoplive.backend.api.agent_api._execute_agent_tool",
+            "backend.api.agent_api._execute_agent_tool",
             return_value=(False, fake_error),
         ):
             r = client.post(self.EP, json={

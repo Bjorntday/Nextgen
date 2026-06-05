@@ -5,7 +5,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
-from shoplive.backend.infra import build_proxies
+from backend.infra import build_proxies
 
 _DEFAULT_HEADERS = {
     "User-Agent": (

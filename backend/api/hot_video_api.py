@@ -11,12 +11,12 @@ from typing import Callable, Dict, List, Tuple
 
 from flask import g, jsonify
 
-from shoplive.backend.audit import AuditedOp
-from shoplive.backend.common.helpers import extract_vertex_text
-from shoplive.backend.share_url_resolver import resolve_video_share_url
-from shoplive.backend.scraper.fetchers import fetch_html_with_playwright
-from shoplive.backend.schemas import HotVideoRemakeRequest
-from shoplive.backend.validation import validate_request
+from backend.audit import AuditedOp
+from backend.common.helpers import extract_vertex_text
+from backend.share_url_resolver import resolve_video_share_url
+from backend.scraper.fetchers import fetch_html_with_playwright
+from backend.schemas import HotVideoRemakeRequest
+from backend.validation import validate_request
 
 logger = logging.getLogger(__name__)
 

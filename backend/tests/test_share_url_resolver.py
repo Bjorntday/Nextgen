@@ -12,7 +12,7 @@ def _resp(url, text="", content_type="text/html; charset=utf-8"):
 
 class TestShareUrlResolver:
     def test_direct_video_url_passthrough(self):
-        from shoplive.backend.share_url_resolver import resolve_video_share_url
+        from backend.share_url_resolver import resolve_video_share_url
 
         result = resolve_video_share_url("https://cdn.example.com/sample.mp4")
         assert result["resolved_video_url"] == "https://cdn.example.com/sample.mp4"
@@ -20,7 +20,7 @@ class TestShareUrlResolver:
         assert result["is_share_link"] is False
 
     def test_extracts_douyin_play_addr_from_html(self, monkeypatch):
-        from shoplive.backend import share_url_resolver as mod
+        from backend import share_url_resolver as mod
 
         html = r'''
         <html><head></head><body>
@@ -35,7 +35,7 @@ class TestShareUrlResolver:
         assert result["resolved_video_url"].startswith("https://aweme.snssdk.com/aweme/v1/play/")
 
     def test_extracts_xiaohongshu_og_video(self, monkeypatch):
-        from shoplive.backend import share_url_resolver as mod
+        from backend import share_url_resolver as mod
 
         html = """
         <html><head>
@@ -50,7 +50,7 @@ class TestShareUrlResolver:
         assert result["is_share_link"] is True
 
     def test_unresolved_page_returns_final_page(self, monkeypatch):
-        from shoplive.backend import share_url_resolver as mod
+        from backend import share_url_resolver as mod
 
         monkeypatch.setattr(
             mod.requests,
@@ -64,7 +64,7 @@ class TestShareUrlResolver:
         assert result["resolved_video_url"] == "https://www.xiaohongshu.com/explore/demo"
 
     def test_rendered_html_extract_when_requests_html_has_no_video(self, monkeypatch):
-        from shoplive.backend import share_url_resolver as mod
+        from backend import share_url_resolver as mod
 
         monkeypatch.setattr(
             mod.requests,

@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 import requests
 from flask import Response, g, jsonify, request, stream_with_context
-from shoplive.backend.async_executor import get_executor
+from backend.async_executor import get_executor
 
-from shoplive.backend.audit import audit_log
-from shoplive.backend.async_executor import make_cache_key, product_insight_cache
+from backend.audit import audit_log
+from backend.async_executor import make_cache_key, product_insight_cache
 
 # Per-URL in-flight events: prevents concurrent requests for the same product URL
 # from each launching a full scrape + LLM analysis independently.
@@ -38,8 +38,8 @@ def _cleanup_inflight_key(cache_key: str) -> None:
 # Override via AGENT_MAX_HISTORY env var.
 import os as _os
 AGENT_MAX_HISTORY: int = int(_os.getenv("AGENT_MAX_HISTORY", "60"))
-from shoplive.backend.validation import validate_request
-from shoplive.backend.schemas import (
+from backend.validation import validate_request
+from backend.schemas import (
     AgentChatRequest,
     AgentRunRequest,
     ImageInsightRequest,
@@ -202,7 +202,7 @@ def _execute_agent_tool(tool_name: str, arguments: dict, timeout_seconds: float 
     view_name, path = _TOOL_ENDPOINT_MAP[tool_name]
 
     def _run():
-        from shoplive.backend.web_app import app as _app
+        from backend.web_app import app as _app
         # Pass base_url so request.host_url inside the view returns the real server address.
         # Werkzeug EnvironBuilder respects base_url for SERVER_NAME / HTTP_HOST computation.
         _ctx_kwargs = {}
@@ -210,7 +210,7 @@ def _execute_agent_tool(tool_name: str, arguments: dict, timeout_seconds: float 
             _ctx_kwargs["base_url"] = host_url.rstrip("/") + "/"
         with _app.test_request_context(path, method="POST", json=arguments, **_ctx_kwargs):
             if trace_id:
-                from shoplive.backend.audit import start_trace
+                from backend.audit import start_trace
                 start_trace(trace_id)
             view_func = _app.view_functions.get(view_name)
             if not view_func:
@@ -267,18 +267,18 @@ def _build_agent_system_prompt(enabled_tools: list, context: dict) -> str:
     return "\n".join(lines)
 
 
-from shoplive.backend.scraper.adapters import (
+from backend.scraper.adapters import (
     assess_parse_quality,
     get_platform_parser,
     guess_platform as guess_platform_by_url,
     parse_generic_page,
 )
-from shoplive.backend.scraper.fetchers import (
+from backend.scraper.fetchers import (
     fetch_html_with_playwright,
     fetch_html_with_requests,
     is_weak_amazon_html,
 )
-from shoplive.backend.scraper.models import ParseResult
+from backend.scraper.models import ParseResult
 
 
 def register_agent_routes(
@@ -644,7 +644,7 @@ def register_agent_routes(
                     image_items = _load_preset_image_cache(asin)
                     if not image_items:
                         try:
-                            from shoplive.backend.async_executor import parallel_fetch_images
+                            from backend.async_executor import parallel_fetch_images
                             parallel_results = parallel_fetch_images(
                                 preset.get("image_urls", [])[:4],
                                 proxy,
@@ -830,7 +830,7 @@ def register_agent_routes(
                     primary.currency = secondary.currency
 
                 # Recalculate confidence after merge
-                from shoplive.backend.scraper.adapters.generic_adapter import _build_confidence
+                from backend.scraper.adapters.generic_adapter import _build_confidence
                 primary.confidence = _build_confidence(primary)
                 return primary
 
@@ -907,7 +907,7 @@ def register_agent_routes(
                     pass
 
             # Parallel image fetching (Article: "将串行调用转为并行以加速执行")
-            from shoplive.backend.async_executor import parallel_fetch_images
+            from backend.async_executor import parallel_fetch_images
             parallel_results = parallel_fetch_images(
                 parsed.image_urls[:4],
                 proxy,
@@ -1448,8 +1448,8 @@ def register_agent_routes(
           done         {"ok", "content", "rounds_used", "tool_calls_made"}
           error        {"ok", "error", "error_code"}
         """
-        import shoplive.backend.common.helpers as _h
-        from shoplive.backend.tool_registry import build_openai_tools
+        import backend.common.helpers as _h
+        from backend.tool_registry import build_openai_tools
 
         _t0 = time.monotonic()
         req = g.req  # AgentRunRequest

@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from shoplive.backend.scraper.models import FetchArtifact
+from backend.scraper.models import FetchArtifact
 
 
 DESKTOP_UA = (

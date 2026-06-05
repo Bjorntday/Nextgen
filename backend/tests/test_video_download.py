@@ -18,7 +18,7 @@ class _Resp:
 
 
 def test_download_video_to_file_uses_browser_headers_for_douyin(monkeypatch, tmp_path):
-    from shoplive.backend.common import helpers as mod
+    from backend.common import helpers as mod
 
     calls = []
 
@@ -48,7 +48,7 @@ def test_download_video_to_file_uses_browser_headers_for_douyin(monkeypatch, tmp
 
 
 def test_download_video_to_file_uses_xiaohongshu_referer(monkeypatch, tmp_path):
-    from shoplive.backend.common import helpers as mod
+    from backend.common import helpers as mod
 
     captured = {}
 

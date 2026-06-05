@@ -3,7 +3,7 @@ import json
 import re
 from urllib.parse import unquote, urlparse
 
-from shoplive.backend.scraper.adapters.generic_adapter import (
+from backend.scraper.adapters.generic_adapter import (
     clean_text,
     extract_review_lines,
     extract_review_signals,

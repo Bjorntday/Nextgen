@@ -29,7 +29,7 @@ def _json_error(message, status=400, recovery_suggestion=None, **extra):
 
 @pytest.fixture()
 def jimeng_app(monkeypatch):
-    from shoplive.backend.api.jimeng_api import register_jimeng_routes
+    from backend.api.jimeng_api import register_jimeng_routes
 
     monkeypatch.setenv("JIMENG_API_KEY", "test-key-xxxx")
     app = Flask(__name__)
@@ -44,7 +44,7 @@ def _video_body():
 
 class TestPostWithRetry:
     def test_rewind_files_resets_streams(self):
-        from shoplive.backend.api.jimeng_api import _rewind_files
+        from backend.api.jimeng_api import _rewind_files
         stream = io.BytesIO(b"hello")
         stream.read()  # advance to end
         files = {"image_file_1": ("x.jpg", stream, "image/jpeg")}
@@ -60,8 +60,8 @@ class TestPostWithRetry:
             return _FakeResp(200)
 
         sleeps = []
-        with patch("shoplive.backend.api.jimeng_api.requests.post", side_effect=fake_post), \
-             patch("shoplive.backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
+        with patch("backend.api.jimeng_api.requests.post", side_effect=fake_post), \
+             patch("backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
             resp = jimeng_app.test_client().post("/api/jimeng/video", json=_video_body())
         assert resp.status_code == 200
         assert resp.get_json()["attempts"] == 1
@@ -75,8 +75,8 @@ class TestPostWithRetry:
             return responses.pop(0)
 
         sleeps = []
-        with patch("shoplive.backend.api.jimeng_api.requests.post", side_effect=fake_post), \
-             patch("shoplive.backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
+        with patch("backend.api.jimeng_api.requests.post", side_effect=fake_post), \
+             patch("backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
             resp = jimeng_app.test_client().post("/api/jimeng/video", json=_video_body())
         body = resp.get_json()
         assert resp.status_code == 200
@@ -90,8 +90,8 @@ class TestPostWithRetry:
             return responses.pop(0)
 
         sleeps = []
-        with patch("shoplive.backend.api.jimeng_api.requests.post", side_effect=fake_post), \
-             patch("shoplive.backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
+        with patch("backend.api.jimeng_api.requests.post", side_effect=fake_post), \
+             patch("backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
             resp = jimeng_app.test_client().post("/api/jimeng/video", json=_video_body())
         body = resp.get_json()
         assert resp.status_code == 503
@@ -107,8 +107,8 @@ class TestPostWithRetry:
             return _FakeResp(401, {"msg": "bad token"})
 
         sleeps = []
-        with patch("shoplive.backend.api.jimeng_api.requests.post", side_effect=fake_post), \
-             patch("shoplive.backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
+        with patch("backend.api.jimeng_api.requests.post", side_effect=fake_post), \
+             patch("backend.api.jimeng_api.time.sleep", side_effect=sleeps.append):
             resp = jimeng_app.test_client().post("/api/jimeng/video", json=_video_body())
         assert resp.status_code == 401
         assert len(calls) == 1  # no retry for 401
@@ -120,8 +120,8 @@ class TestPostWithRetry:
         def fake_post(endpoint, **kwargs):
             return responses.pop(0)
 
-        with patch("shoplive.backend.api.jimeng_api.requests.post", side_effect=fake_post), \
-             patch("shoplive.backend.api.jimeng_api.time.sleep"):
+        with patch("backend.api.jimeng_api.requests.post", side_effect=fake_post), \
+             patch("backend.api.jimeng_api.time.sleep"):
             resp = jimeng_app.test_client().post("/api/jimeng/video", json=_video_body())
         assert resp.status_code == 200
         assert resp.get_json()["attempts"] == 2
@@ -135,8 +135,8 @@ class TestPostWithRetry:
         def fake_post(endpoint, **kwargs):
             return responses.pop(0)
 
-        with patch("shoplive.backend.api.jimeng_api.requests.post", side_effect=fake_post), \
-             patch("shoplive.backend.api.jimeng_api.time.sleep"):
+        with patch("backend.api.jimeng_api.requests.post", side_effect=fake_post), \
+             patch("backend.api.jimeng_api.time.sleep"):
             resp = jimeng_app.test_client().post(
                 "/api/jimeng/image",
                 json={"prompt": "cat", "model": "jimeng-4.6", "ratio": "1:1", "resolution": "2k"},

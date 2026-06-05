@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Tuple
 import requests
 from flask import jsonify, request
 
-from shoplive.backend.audit import AuditedOp
+from backend.audit import AuditedOp
 
 logger = logging.getLogger(__name__)
 

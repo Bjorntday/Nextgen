@@ -1,9 +1,9 @@
-from shoplive.backend.briefing import (
+from backend.briefing import (
     build_shoplive_video_prompt_template,
     render_compact_product_anchor_text,
     summarize_storyboard,
 )
-from shoplive.backend.api.shoplive_api import _build_shoplive_video_prompt_via_llm
+from backend.api.shoplive_api import _build_shoplive_video_prompt_via_llm
 
 
 def _normalized_brief():

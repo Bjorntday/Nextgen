@@ -2,14 +2,14 @@ import os
 import sys
 from pathlib import Path
 
-# Ensure the project root (parent of the `shoplive/` package) is on sys.path so
-# that `shoplive.*` imports work regardless of the current working directory.
-# parents: [0]=backend/, [1]=shoplive/, [2]=ai创新挑战赛/
-_project_root = str(Path(__file__).resolve().parents[2])
+# Ensure the project root (parent of the `backend/` package) is on sys.path so
+# that `backend.*` imports work regardless of the current working directory.
+# parents: [0]=backend/, [1]=nextgen/, [2]=project/
+_project_root = str(Path(__file__).resolve().parents[1])
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-from shoplive.backend.app_factory import create_app
+from backend.app_factory import create_app
 
 
 def _load_dotenv_if_present():

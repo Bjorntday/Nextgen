@@ -19,9 +19,9 @@ _ASR_CACHE_TTL = 24 * 60 * 60  # 24 h
 
 from flask import g, jsonify, request
 
-from shoplive.backend.audit import AuditedOp
-from shoplive.backend.schemas import VideoEditExportRequest, VideoTimelineRenderRequest
-from shoplive.backend.validation import validate_request
+from backend.audit import AuditedOp
+from backend.schemas import VideoEditExportRequest, VideoTimelineRenderRequest
+from backend.validation import validate_request
 
 logger = logging.getLogger(__name__)
 
@@ -1043,7 +1043,7 @@ def register_video_edit_routes(
         """
         import re as _re
         import requests as _req
-        from shoplive.backend.infra import parse_common_payload, get_access_token
+        from backend.infra import parse_common_payload, get_access_token
 
         payload = request.get_json(silent=True) or {}
         video_url = str(payload.get("video_url") or "").strip()
@@ -1060,7 +1060,7 @@ def register_video_edit_routes(
         op = AuditedOp("video_asr", "transcribe", {"video_url_len": len(video_url), "language": language})
 
         if not video_url:
-            from shoplive.backend.common.helpers import json_error
+            from backend.common.helpers import json_error
             op.error("missing video_url", "MISSING_VIDEO_URL")
             return json_error("video_url 不能为空", error_code="MISSING_VIDEO_URL")
 
@@ -1069,8 +1069,8 @@ def register_video_edit_routes(
         except Exception:
             project_id, key_file, proxy = "", "", ""
 
-        from shoplive.backend.common.helpers import json_error, download_video_to_file
-        from shoplive.backend.infra import build_proxies
+        from backend.common.helpers import json_error, download_video_to_file
+        from backend.infra import build_proxies
 
         try:
             # Download video to a temp file for base64 encoding
@@ -1149,7 +1149,7 @@ def register_video_edit_routes(
             return jsonify({"ok": True, "subtitles": subtitles, "raw_text": raw_text})
 
         except Exception as exc:
-            from shoplive.backend.common.helpers import json_error
+            from backend.common.helpers import json_error
             op.error(exc, "ASR_FAILED")
             return json_error(f"ASR 失败: {exc}", 500, error_code="ASR_FAILED")
 
@@ -1171,8 +1171,8 @@ def register_video_edit_routes(
         Response JSON:
             ok, video_url, file_name
         """
-        from shoplive.backend.common.helpers import json_error, download_video_to_file
-        from shoplive.backend.infra import build_proxies, parse_common_payload
+        from backend.common.helpers import json_error, download_video_to_file
+        from backend.infra import build_proxies, parse_common_payload
         import requests as _req
 
         payload = request.get_json(silent=True) or {}
@@ -1215,7 +1215,7 @@ def register_video_edit_routes(
         try:
             # Resolve image data
             if not image_b64 and image_url_src:
-                from shoplive.backend.common.helpers import fetch_image_as_base64
+                from backend.common.helpers import fetch_image_as_base64
                 image_b64, image_mime = fetch_image_as_base64(image_url_src, proxy)
             if not image_b64:
                 return json_error("image_base64 或 image_url 至少提供一个", error_code="MISSING_IMAGE")

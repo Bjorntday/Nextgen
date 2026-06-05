@@ -21,8 +21,8 @@ from typing import Generator
 import requests
 from flask import Flask, Response, g, jsonify, request
 
-from shoplive.backend.audit import AuditedOp, audit_log
-from shoplive.backend.common.helpers import json_error
+from backend.audit import AuditedOp, audit_log
+from backend.common.helpers import json_error
 
 _TABCODE_API_BASE = os.getenv("TABCODE_API_BASE", "https://chat.tabcode.cc")
 _TABCODE_API_KEY  = os.getenv("TABCODE_API_KEY",  "")

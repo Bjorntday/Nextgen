@@ -22,7 +22,7 @@ from typing import Callable, Dict, Optional
 import requests
 from flask import g, jsonify, request, send_from_directory
 
-from shoplive.backend.audit import audit_log
+from backend.audit import audit_log
 
 _DEFAULT_COMFYUI_URL = "https://development-452-9smwwyd2-8188.550w.link"
 _POLL_INTERVAL = 2   # lowered from 5 s — ComfyUI is local/LAN, round-trip ~10ms

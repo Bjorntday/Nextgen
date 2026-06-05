@@ -1,6 +1,6 @@
 import pytest
 
-from shoplive.backend.common.helpers import normalize_timeline_video_segments
+from backend.common.helpers import normalize_timeline_video_segments
 
 
 class TestNormalizeTimelineVideoSegments:

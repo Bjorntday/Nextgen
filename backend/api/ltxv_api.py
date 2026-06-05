@@ -25,9 +25,9 @@ from typing import Callable, Dict, Optional
 import requests
 from flask import g, jsonify, send_from_directory
 
-from shoplive.backend.audit import audit_log
-from shoplive.backend.validation import validate_request
-from shoplive.backend.schemas import LtxvGenerateRequest, LtxvExtendRequest
+from backend.audit import audit_log
+from backend.validation import validate_request
+from backend.schemas import LtxvGenerateRequest, LtxvExtendRequest
 
 # ---------------------------------------------------------------------------
 # Config

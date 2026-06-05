@@ -5,8 +5,8 @@ Design principle (from "一文读懂 Agent Tools"):
   Type safety — validate all inputs at system boundary before any business logic runs.
 
 Usage:
-    from shoplive.backend.validation import validate_request
-    from shoplive.backend.schemas import ProductInsightRequest
+    from backend.validation import validate_request
+    from backend.schemas import ProductInsightRequest
 
     @app.post("/api/agent/shop-product-insight")
     @validate_request(ProductInsightRequest)

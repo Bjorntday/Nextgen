@@ -28,9 +28,9 @@ from typing import Callable, Dict, List, Optional, Tuple
 import requests
 from flask import g, jsonify
 
-from shoplive.backend.audit import audit_log
-from shoplive.backend.validation import validate_request
-from shoplive.backend.schemas import JimengVideoRequest, JimengImageRequest
+from backend.audit import audit_log
+from backend.validation import validate_request
+from backend.schemas import JimengVideoRequest, JimengImageRequest
 
 _DEFAULT_API_BASE = "http://43.163.110.48"
 _TIMEOUT = 1200  # 20 minutes per provider docs

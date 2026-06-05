@@ -38,7 +38,7 @@ def app():
 
     with tempfile.TemporaryDirectory() as td:
         export_dir = Path(td)
-        from shoplive.backend.api.comfyui_ltxv_api import register_comfyui_ltxv_routes
+        from backend.api.comfyui_ltxv_api import register_comfyui_ltxv_routes
         register_comfyui_ltxv_routes(
             application,
             json_error=json_error,
@@ -62,7 +62,7 @@ class TestStatus:
     def test_status_ok(self, client):
         mock_resp = MagicMock()
         mock_resp.ok = True
-        with patch("shoplive.backend.api.comfyui_ltxv_api.requests.get", return_value=mock_resp):
+        with patch("backend.api.comfyui_ltxv_api.requests.get", return_value=mock_resp):
             r = client.get("/api/comfyui-ltxv/status")
         assert r.status_code == 200
         data = r.get_json()
@@ -70,7 +70,7 @@ class TestStatus:
         assert "comfyui_url" in data
 
     def test_status_unreachable(self, client):
-        with patch("shoplive.backend.api.comfyui_ltxv_api.requests.get", side_effect=ConnectionError("refused")):
+        with patch("backend.api.comfyui_ltxv_api.requests.get", side_effect=ConnectionError("refused")):
             r = client.get("/api/comfyui-ltxv/status")
         data = r.get_json()
         assert data["ok"] is False
@@ -153,8 +153,8 @@ class TestGenerateText2Video:
 
     def test_text2video_success(self, client, app):
         mock_get, mock_post = self._mock_comfyui_flow()
-        with patch("shoplive.backend.api.comfyui_ltxv_api.requests.get", side_effect=mock_get), \
-             patch("shoplive.backend.api.comfyui_ltxv_api.requests.post", side_effect=mock_post):
+        with patch("backend.api.comfyui_ltxv_api.requests.get", side_effect=mock_get), \
+             patch("backend.api.comfyui_ltxv_api.requests.post", side_effect=mock_post):
             r = client.post("/api/comfyui-ltxv/generate", json={
                 "prompt": "A beautiful sunset over the ocean",
                 "model": "LTX-2 (Pro)",
@@ -175,8 +175,8 @@ class TestGenerateText2Video:
     def test_text2video_portrait_resolution(self, client, app):
         """Verify portrait resolution (1080x1920) is accepted and passed through."""
         mock_get, mock_post = self._mock_comfyui_flow()
-        with patch("shoplive.backend.api.comfyui_ltxv_api.requests.get", side_effect=mock_get), \
-             patch("shoplive.backend.api.comfyui_ltxv_api.requests.post", side_effect=mock_post):
+        with patch("backend.api.comfyui_ltxv_api.requests.get", side_effect=mock_get), \
+             patch("backend.api.comfyui_ltxv_api.requests.post", side_effect=mock_post):
             r = client.post("/api/comfyui-ltxv/generate", json={
                 "prompt": "Product showcase",
                 "resolution": "1080x1920",
@@ -190,8 +190,8 @@ class TestGenerateText2Video:
         submit_resp.json.return_value = {"prompt_id": "test-timeout"}
         submit_resp.raise_for_status = MagicMock()
 
-        with patch("shoplive.backend.api.comfyui_ltxv_api.requests.post", return_value=submit_resp), \
-             patch("shoplive.backend.api.comfyui_ltxv_api._poll_completion",
+        with patch("backend.api.comfyui_ltxv_api.requests.post", return_value=submit_resp), \
+             patch("backend.api.comfyui_ltxv_api._poll_completion",
                    side_effect=TimeoutError("timeout")):
             r = client.post("/api/comfyui-ltxv/generate", json={"prompt": "test"})
         assert r.status_code == 504
@@ -203,7 +203,7 @@ class TestGenerateText2Video:
         submit_resp.json.return_value = {}
         submit_resp.raise_for_status = MagicMock()
 
-        with patch("shoplive.backend.api.comfyui_ltxv_api.requests.post", return_value=submit_resp):
+        with patch("backend.api.comfyui_ltxv_api.requests.post", return_value=submit_resp):
             r = client.post("/api/comfyui-ltxv/generate", json={"prompt": "test"})
         assert r.status_code == 502
         assert "prompt_id" in r.get_json()["error"]
@@ -257,8 +257,8 @@ class TestGenerateImage2Video:
                 return download_resp
             return MagicMock()
 
-        with patch("shoplive.backend.api.comfyui_ltxv_api.requests.get", side_effect=mock_get), \
-             patch("shoplive.backend.api.comfyui_ltxv_api.requests.post", side_effect=mock_post):
+        with patch("backend.api.comfyui_ltxv_api.requests.get", side_effect=mock_get), \
+             patch("backend.api.comfyui_ltxv_api.requests.post", side_effect=mock_post):
             r = client.post("/api/comfyui-ltxv/generate", json={
                 "prompt": "Product video",
                 "image_base64": f"data:image/png;base64,{fake_img_b64}",
@@ -294,7 +294,7 @@ class TestDownload:
 
 class TestResolutionMapping:
     def test_16_9_resolutions(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _RES_TO_LATENT
+        from backend.api.comfyui_ltxv_api import _RES_TO_LATENT
         for key in ["1920x1080", "2560x1440", "3840x2160", "1280x720"]:
             w, h = _RES_TO_LATENT[key]
             ratio = w / h
@@ -303,7 +303,7 @@ class TestResolutionMapping:
             assert h % 64 == 0, f"{key}: height {h} not multiple of 64"
 
     def test_9_16_resolutions(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _RES_TO_LATENT
+        from backend.api.comfyui_ltxv_api import _RES_TO_LATENT
         for key in ["1080x1920", "1440x2560", "2160x3840", "720x1280"]:
             w, h = _RES_TO_LATENT[key]
             ratio = w / h
@@ -312,7 +312,7 @@ class TestResolutionMapping:
             assert h % 64 == 0
 
     def test_default_fallback_is_16_9(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _RES_TO_LATENT
+        from backend.api.comfyui_ltxv_api import _RES_TO_LATENT
         # Verify that an unknown key falls back to 16:9 default (1024, 576)
         w, h = _RES_TO_LATENT.get("9999x9999", (1024, 576))
         assert (w, h) == (1024, 576)
@@ -324,7 +324,7 @@ class TestResolutionMapping:
 
 class TestWorkflowBuilder:
     def test_text2video_workflow_structure(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _build_text2video_workflow
+        from backend.api.comfyui_ltxv_api import _build_text2video_workflow
         wf = _build_text2video_workflow("a cat", model="LTX-2 (Pro)", duration=10, resolution="1920x1080")
         prompt_nodes = wf["prompt"]
         # Must have EmptyLTXVLatentVideo node with correct dimensions
@@ -334,14 +334,14 @@ class TestWorkflowBuilder:
         assert node5["inputs"]["height"] == 576
 
     def test_text2video_portrait_dimensions(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _build_text2video_workflow
+        from backend.api.comfyui_ltxv_api import _build_text2video_workflow
         wf = _build_text2video_workflow("a product", resolution="1080x1920")
         node5 = wf["prompt"]["5"]
         assert node5["inputs"]["width"] == 576
         assert node5["inputs"]["height"] == 1024
 
     def test_image2video_workflow_structure(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _build_image2video_workflow
+        from backend.api.comfyui_ltxv_api import _build_image2video_workflow
         wf = _build_image2video_workflow("a product video", image_name="test.png", resolution="1920x1080")
         prompt_nodes = wf["prompt"]
         # Must have LoadImage node
@@ -355,12 +355,12 @@ class TestWorkflowBuilder:
         assert node6["inputs"]["height"] == 576
 
     def test_fast_model_picks_distilled_ckpt(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _pick_ckpt
+        from backend.api.comfyui_ltxv_api import _pick_ckpt
         assert "distilled" in _pick_ckpt("LTX-2 (Fast)")
         assert "dev" in _pick_ckpt("LTX-2 (Pro)")
 
     def test_duration_to_length(self):
-        from shoplive.backend.api.comfyui_ltxv_api import _duration_to_length
+        from backend.api.comfyui_ltxv_api import _duration_to_length
         length = _duration_to_length(10, 25)
         assert length >= 9
         assert (length - 1) % 8 == 0  # Must be 8*n + 1

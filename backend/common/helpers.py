@@ -22,7 +22,7 @@ from google.cloud import storage
 from google.oauth2 import service_account
 from requests import Response
 
-from shoplive.backend.infra import (
+from backend.infra import (
     build_proxies,
     build_proxy_candidates,
     get_access_token,

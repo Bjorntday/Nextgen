@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 BACKEND_DIR = Path(__file__).resolve().parent
-SHOPLIVE_DIR = BACKEND_DIR.parent
-PROJECT_ROOT = SHOPLIVE_DIR.parent.resolve()
+PROJECT_DIR = BACKEND_DIR.parent
+WORKSPACE_ROOT = PROJECT_DIR.parent.resolve()
 DEFAULT_KEY_FILE_CANDIDATES = [
-    (SHOPLIVE_DIR / "credentials/qy-shoplazza-02-ai-compet-huangshaozheng-ba94de5ac3ab.json").resolve(),
-    (SHOPLIVE_DIR / "backend/qy-shoplazza-02-ai-compet-huangshaozheng-ba94de5ac3ab.json").resolve(),
-    (PROJECT_ROOT / "gemini调用/qy-shoplazza-02-ai-compet-huangshaozheng-ba94de5ac3ab.json").resolve(),
+    (PROJECT_DIR / "credentials/qy-shoplazza-02-ai-compet-huangshaozheng-ba94de5ac3ab.json").resolve(),
+    (PROJECT_DIR / "backend/qy-shoplazza-02-ai-compet-huangshaozheng-ba94de5ac3ab.json").resolve(),
+    (WORKSPACE_ROOT / "gemini调用/qy-shoplazza-02-ai-compet-huangshaozheng-ba94de5ac3ab.json").resolve(),
     (
-        PROJECT_ROOT
+        WORKSPACE_ROOT
         / "gemini调用/vertex_gemini_veo_examples/qy-shoplazza-02-ai-compet-huangshaozheng-ba94de5ac3ab.json"
     ).resolve(),
 ]
@@ -207,7 +207,7 @@ def _get_access_token_raw(key_file: str, proxy: str, timeout_seconds: int = 20) 
         creds.refresh(auth_req)
         return creds.token
 
-    from shoplive.backend.async_executor import get_executor
+    from backend.async_executor import get_executor
 
     errors: List[str] = []
     candidates = build_proxy_candidates(proxy)

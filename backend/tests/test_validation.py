@@ -11,7 +11,7 @@ from flask import Flask, g, jsonify
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
 
-from shoplive.backend.validation import validate_request
+from backend.validation import validate_request
 
 
 # ---------------------------------------------------------------------------

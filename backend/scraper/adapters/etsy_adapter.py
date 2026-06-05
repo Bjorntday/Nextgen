@@ -1,4 +1,4 @@
-from shoplive.backend.scraper.adapters.generic_adapter import parse_generic_page
+from backend.scraper.adapters.generic_adapter import parse_generic_page
 
 
 def parse_etsy_page(product_url: str, html_text: str):

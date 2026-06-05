@@ -21,16 +21,16 @@ import pytest
 
 class TestGetGcsClientCache:
     def test_same_key_file_returns_cached_client(self):
-        from shoplive.backend.common.helpers import _get_gcs_client
+        from backend.common.helpers import _get_gcs_client
         _get_gcs_client.cache_clear()
 
         fake_creds = MagicMock()
         fake_creds.project_id = "test-project"
         fake_client = MagicMock()
 
-        with patch("shoplive.backend.common.helpers.service_account.Credentials.from_service_account_file",
+        with patch("backend.common.helpers.service_account.Credentials.from_service_account_file",
                    return_value=fake_creds) as mock_creds, \
-             patch("shoplive.backend.common.helpers.storage.Client",
+             patch("backend.common.helpers.storage.Client",
                    return_value=fake_client) as mock_client:
             c1 = _get_gcs_client("/fake/key.json")
             c2 = _get_gcs_client("/fake/key.json")
@@ -40,15 +40,15 @@ class TestGetGcsClientCache:
         assert c1 is c2
 
     def test_different_key_files_get_separate_clients(self):
-        from shoplive.backend.common.helpers import _get_gcs_client
+        from backend.common.helpers import _get_gcs_client
         _get_gcs_client.cache_clear()
 
         fake_creds = MagicMock()
         fake_creds.project_id = "test-project"
 
-        with patch("shoplive.backend.common.helpers.service_account.Credentials.from_service_account_file",
+        with patch("backend.common.helpers.service_account.Credentials.from_service_account_file",
                    return_value=fake_creds), \
-             patch("shoplive.backend.common.helpers.storage.Client",
+             patch("backend.common.helpers.storage.Client",
                    side_effect=lambda **kw: MagicMock()) as mock_client:
             c1 = _get_gcs_client("/fake/key_a.json")
             c2 = _get_gcs_client("/fake/key_b.json")
@@ -57,7 +57,7 @@ class TestGetGcsClientCache:
         assert c1 is not c2
 
     def test_sign_gcs_url_uses_cached_client(self):
-        from shoplive.backend.common.helpers import _get_gcs_client, sign_gcs_url
+        from backend.common.helpers import _get_gcs_client, sign_gcs_url
         _get_gcs_client.cache_clear()
 
         fake_creds = MagicMock()
@@ -69,9 +69,9 @@ class TestGetGcsClientCache:
         fake_client = MagicMock()
         fake_client.bucket.return_value = fake_bucket
 
-        with patch("shoplive.backend.common.helpers.service_account.Credentials.from_service_account_file",
+        with patch("backend.common.helpers.service_account.Credentials.from_service_account_file",
                    return_value=fake_creds), \
-             patch("shoplive.backend.common.helpers.storage.Client",
+             patch("backend.common.helpers.storage.Client",
                    return_value=fake_client):
             url1 = sign_gcs_url("gs://my-bucket/video1.mp4", "/fake/key.json")
             url2 = sign_gcs_url("gs://my-bucket/video2.mp4", "/fake/key.json")
@@ -82,7 +82,7 @@ class TestGetGcsClientCache:
         assert url2 == "https://signed.url/video.mp4"
 
     def test_sign_gcs_url_bad_uri_returns_empty(self):
-        from shoplive.backend.common.helpers import sign_gcs_url
+        from backend.common.helpers import sign_gcs_url
         assert sign_gcs_url("not-a-gs-uri", "/fake/key.json") == ""
         assert sign_gcs_url("", "/fake/key.json") == ""
 
@@ -93,7 +93,7 @@ class TestGetGcsClientCache:
 
 class TestLLMResponseCache:
     def test_cache_miss_then_hit(self):
-        from shoplive.backend.async_executor import _TTLCache
+        from backend.async_executor import _TTLCache
         cache = _TTLCache(ttl_seconds=60, max_size=10)
         key = "script:abc123:gpt-4:deadbeef"
 
@@ -105,7 +105,7 @@ class TestLLMResponseCache:
         assert cached["script"] == "hello world script"
 
     def test_cache_expires_after_ttl(self):
-        from shoplive.backend.async_executor import _TTLCache
+        from backend.async_executor import _TTLCache
         cache = _TTLCache(ttl_seconds=1, max_size=10)
         key = "prompt:xyz:model:12345678"
         cache.set(key, {"prompt": "buy now!"})
@@ -114,7 +114,7 @@ class TestLLMResponseCache:
         assert cache.get(key) is None
 
     def test_cache_evicts_oldest_when_full(self):
-        from shoplive.backend.async_executor import _TTLCache
+        from backend.async_executor import _TTLCache
         cache = _TTLCache(ttl_seconds=60, max_size=3)
         for i in range(3):
             cache.set(f"key:{i}", {"v": i})
@@ -126,7 +126,7 @@ class TestLLMResponseCache:
 
     def test_llm_response_cache_global_instance(self):
         """shoplive_api._llm_response_cache is accessible and functional."""
-        from shoplive.backend.api.shoplive_api import _llm_response_cache
+        from backend.api.shoplive_api import _llm_response_cache
         k = "test_global_instance"
         _llm_response_cache.set(k, {"data": 42})
         assert _llm_response_cache.get(k) == {"data": 42}
@@ -139,13 +139,13 @@ class TestLLMResponseCache:
 class TestChainJobEviction:
     def _make_veo_module(self):
         """Import the closure-internal helpers via the Flask app."""
-        from shoplive.backend.web_app import create_app
+        from backend.web_app import create_app
         app = create_app()
         return app
 
     def test_chain_jobs_evicted_after_ttl(self):
         """Completed jobs older than CHAIN_JOB_TTL_SECONDS are evicted on next update."""
-        from shoplive.backend.web_app import create_app
+        from backend.web_app import create_app
         app = create_app()
         app.config["TESTING"] = True
 
@@ -155,7 +155,7 @@ class TestChainJobEviction:
             assert resp.status_code == 404
 
     def test_chain_status_missing_job_id(self):
-        from shoplive.backend.web_app import create_app
+        from backend.web_app import create_app
         app = create_app()
         app.config["TESTING"] = True
         with app.test_client() as c:
@@ -165,7 +165,7 @@ class TestChainJobEviction:
             assert d["ok"] is False
 
     def test_chain_status_empty_job_id(self):
-        from shoplive.backend.web_app import create_app
+        from backend.web_app import create_app
         app = create_app()
         app.config["TESTING"] = True
         with app.test_client() as c:
@@ -182,13 +182,13 @@ class TestPollVideoReadyInitialWait:
         """Extract _poll_video_ready from the veo register closure via a minimal app."""
         # We test the parameter existence and sleep behaviour via mocking
         import importlib
-        import shoplive.backend.api.veo_api as veo_module
+        import backend.api.veo_api as veo_module
         return veo_module
 
     def test_initial_wait_default_is_20(self):
         """_poll_video_ready default initial wait resolves to 20 when env var absent."""
         import os
-        import shoplive.backend.api.veo_api as vm
+        import backend.api.veo_api as vm
         import inspect
 
         src = inspect.getsource(vm)
@@ -203,7 +203,7 @@ class TestPollVideoReadyInitialWait:
         """When initial_wait_seconds > 0, time.sleep is called before first poll."""
         # We build a minimal stub environment to call _poll_video_ready directly
         from flask import Flask
-        import shoplive.backend.api.veo_api as veo_module
+        import backend.api.veo_api as veo_module
 
         stub_app = Flask(__name__)
         sleep_calls = []
@@ -258,7 +258,7 @@ class TestSharedExecutorIn16sWorkflow:
     def test_no_new_threadpoolexecutor_context_manager(self):
         """The 16s workflow code no longer uses 'with ThreadPoolExecutor' per request."""
         import inspect
-        import shoplive.backend.api.veo_api as vm
+        import backend.api.veo_api as vm
         src = inspect.getsource(vm)
 
         # The old pattern was: `with ThreadPoolExecutor(max_workers=2) as pool:`
@@ -268,7 +268,7 @@ class TestSharedExecutorIn16sWorkflow:
     def test_get_executor_used_in_16s_section(self):
         """After fix, the 16s section should reference get_executor."""
         import inspect
-        import shoplive.backend.api.veo_api as vm
+        import backend.api.veo_api as vm
         src = inspect.getsource(vm)
         assert "get_executor()" in src
 
@@ -280,7 +280,7 @@ class TestSharedExecutorIn16sWorkflow:
 class TestInfraNoExecutorLeak:
     def test_infra_uses_shared_executor(self):
         import inspect
-        import shoplive.backend.infra as infra_module
+        import backend.infra as infra_module
         src = inspect.getsource(infra_module)
         # ThreadPoolExecutor import removed from infra.py
         assert "from concurrent.futures import ThreadPoolExecutor" not in src
@@ -290,7 +290,7 @@ class TestInfraNoExecutorLeak:
     def test_get_access_token_raw_no_per_attempt_pool(self):
         """_get_access_token_raw no longer creates a per-attempt ThreadPoolExecutor."""
         import inspect
-        import shoplive.backend.infra as infra_module
+        import backend.infra as infra_module
         src = inspect.getsource(infra_module._get_access_token_raw)
         assert "ThreadPoolExecutor(" not in src
 
@@ -301,7 +301,7 @@ class TestInfraNoExecutorLeak:
 
 class TestShopliveBaseResponse:
     def test_workflow_validate_action(self):
-        from shoplive.backend.web_app import create_app
+        from backend.web_app import create_app
         app = create_app()
         app.config["TESTING"] = True
         with app.test_client() as c:
@@ -325,7 +325,7 @@ class TestShopliveBaseResponse:
             assert d["action"] == "validate"
 
     def test_workflow_pre_export_check_action(self):
-        from shoplive.backend.web_app import create_app
+        from backend.web_app import create_app
         app = create_app()
         app.config["TESTING"] = True
         with app.test_client() as c:

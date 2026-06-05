@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from shoplive.backend.audit import (
+from backend.audit import (
     AuditLogger,
     AuditRecord,
     append_to_call_chain,

@@ -3,7 +3,7 @@ import json
 import re
 from urllib.parse import unquote, urljoin, urlparse
 
-from shoplive.backend.scraper.models import ParseResult
+from backend.scraper.models import ParseResult
 
 
 def pick_first_non_empty(candidates):

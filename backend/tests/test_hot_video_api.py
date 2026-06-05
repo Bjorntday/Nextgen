@@ -19,7 +19,7 @@ class _VertexResp:
 
 @pytest.fixture()
 def hot_video_client():
-    from shoplive.backend.api.hot_video_api import register_hot_video_routes
+    from backend.api.hot_video_api import register_hot_video_routes
 
     # Control LLM behaviour per-test: set "raise" to an exception to simulate failure,
     # or set "response" to control what call_litellm_chat returns.
@@ -66,7 +66,7 @@ class TestHotVideoAnalyzeApi:
 
     def test_returns_vertex_analysis_payload(self, monkeypatch, hot_video_client):
         client, llm_state = hot_video_client
-        from shoplive.backend.api import hot_video_api as mod
+        from backend.api import hot_video_api as mod
 
         analysis_json = {
             "summary": "这是一条高转化参考视频。",
@@ -130,7 +130,7 @@ class TestHotVideoAnalyzeApi:
 
     def test_falls_back_when_vertex_analysis_fails(self, monkeypatch, hot_video_client):
         client, llm_state = hot_video_client
-        from shoplive.backend.api import hot_video_api as mod
+        from backend.api import hot_video_api as mod
 
         llm_state["raise"] = RuntimeError("vertex unavailable")
 
@@ -173,7 +173,7 @@ class TestHotVideoAnalyzeApi:
 
     def test_fallback_keeps_share_resolution_when_asr_stage_fails(self, monkeypatch, hot_video_client):
         client, llm_state = hot_video_client
-        from shoplive.backend.api import hot_video_api as mod
+        from backend.api import hot_video_api as mod
 
         llm_state["raise"] = RuntimeError("llm unavailable")
 
@@ -223,7 +223,7 @@ class TestHotVideoAnalyzeApi:
 
     def test_validation_accepts_share_text_with_embedded_url(self, monkeypatch, hot_video_client):
         client, _llm_state = hot_video_client
-        from shoplive.backend.api import hot_video_api as mod
+        from backend.api import hot_video_api as mod
         import requests
 
         captured = {}
@@ -254,7 +254,7 @@ class TestHotVideoAnalyzeApi:
 
 
 def test_run_video_asr_returns_400_when_share_link_unresolved():
-    from shoplive.backend.api.hot_video_api import _run_video_asr
+    from backend.api.hot_video_api import _run_video_asr
 
     called = {"download": False}
 
@@ -287,7 +287,7 @@ def test_run_video_asr_returns_400_when_share_link_unresolved():
 
 
 def test_run_video_asr_preserves_share_resolution_when_download_fails():
-    from shoplive.backend.api.hot_video_api import _run_video_asr
+    from backend.api.hot_video_api import _run_video_asr
 
     result = _run_video_asr(
         {"video_url": "https://v.douyin.com/abc123/", "language": "zh"},
@@ -316,51 +316,51 @@ def test_run_video_asr_preserves_share_resolution_when_download_fails():
 
 class TestCleanSubtitleText:
     def test_strips_music_tag(self):
-        from shoplive.backend.api.hot_video_api import _clean_subtitle_text
+        from backend.api.hot_video_api import _clean_subtitle_text
         assert _clean_subtitle_text("[music] 这件衣服显瘦") == "这件衣服显瘦"
 
     def test_strips_background_music_zh(self):
-        from shoplive.backend.api.hot_video_api import _clean_subtitle_text
+        from backend.api.hot_video_api import _clean_subtitle_text
         assert _clean_subtitle_text("[背景音乐] 欢迎来购") == "欢迎来购"
 
     def test_strips_applause(self):
-        from shoplive.backend.api.hot_video_api import _clean_subtitle_text
+        from backend.api.hot_video_api import _clean_subtitle_text
         assert _clean_subtitle_text("[applause] Great product!") == "Great product!"
 
     def test_returns_empty_when_only_noise(self):
-        from shoplive.backend.api.hot_video_api import _clean_subtitle_text
+        from backend.api.hot_video_api import _clean_subtitle_text
         assert _clean_subtitle_text("[music]") == ""
 
     def test_passes_through_clean_text(self):
-        from shoplive.backend.api.hot_video_api import _clean_subtitle_text
+        from backend.api.hot_video_api import _clean_subtitle_text
         assert _clean_subtitle_text("三秒钩子直接给结果") == "三秒钩子直接给结果"
 
     def test_collapses_extra_spaces(self):
-        from shoplive.backend.api.hot_video_api import _clean_subtitle_text
+        from backend.api.hot_video_api import _clean_subtitle_text
         result = _clean_subtitle_text("你好  世界")
         assert result == "你好 世界"
 
 
 class TestComputeConfidenceScore:
     def test_litellm_with_rich_subtitles(self):
-        from shoplive.backend.api.hot_video_api import _compute_confidence_score
+        from backend.api.hot_video_api import _compute_confidence_score
         subtitles = [{"start": i, "end": i + 1, "text": f"line{i}"} for i in range(12)]
         shot_plan = [{"shot": f"s{i}"} for i in range(6)]
         score = _compute_confidence_score("litellm", subtitles, shot_plan)
         assert 0.9 <= score <= 1.0
 
     def test_fallback_with_no_subtitles(self):
-        from shoplive.backend.api.hot_video_api import _compute_confidence_score
+        from backend.api.hot_video_api import _compute_confidence_score
         score = _compute_confidence_score("fallback", [], [])
         assert score == 0.25
 
     def test_litellm_empty_mid_range(self):
-        from shoplive.backend.api.hot_video_api import _compute_confidence_score
+        from backend.api.hot_video_api import _compute_confidence_score
         score = _compute_confidence_score("litellm_empty", [], [])
         assert 0.4 <= score <= 0.6
 
     def test_score_bounded_0_to_1(self):
-        from shoplive.backend.api.hot_video_api import _compute_confidence_score
+        from backend.api.hot_video_api import _compute_confidence_score
         subtitles = [{"start": i, "end": i + 1, "text": f"line{i}"} for i in range(50)]
         shot_plan = [{"shot": f"s{i}"} for i in range(20)]
         score = _compute_confidence_score("litellm", subtitles, shot_plan)
@@ -369,40 +369,40 @@ class TestComputeConfidenceScore:
 
 class TestBuildEnginePrompts:
     def test_returns_all_four_engines(self):
-        from shoplive.backend.api.hot_video_api import _build_engine_prompts
+        from backend.api.hot_video_api import _build_engine_prompts
         prompts = _build_engine_prompts("base prompt", {"hook": "先看结果"}, {"language": "zh", "product_name": "连衣裙", "duration": 16})
         assert set(prompts.keys()) == {"veo", "jimeng", "ltx", "grok"}
 
     def test_engine_prompts_non_empty(self):
-        from shoplive.backend.api.hot_video_api import _build_engine_prompts
+        from backend.api.hot_video_api import _build_engine_prompts
         prompts = _build_engine_prompts("hero video", {}, {"language": "en", "product_name": "dress", "duration": 12})
         for engine, text in prompts.items():
             assert len(text) > 10, f"Engine {engine} prompt too short: {repr(text)}"
 
     def test_veo_contains_cinematic_keywords(self):
-        from shoplive.backend.api.hot_video_api import _build_engine_prompts
+        from backend.api.hot_video_api import _build_engine_prompts
         prompts = _build_engine_prompts("base", {}, {"language": "en", "product_name": "dress", "duration": 16})
         assert any(k in prompts["veo"].lower() for k in ["cinematic", "camera", "lighting"])
 
     def test_ltx_contains_keyframe_keyword(self):
-        from shoplive.backend.api.hot_video_api import _build_engine_prompts
+        from backend.api.hot_video_api import _build_engine_prompts
         prompts = _build_engine_prompts("base", {}, {"language": "en", "product_name": "dress", "duration": 16})
         assert "keyframe" in prompts["ltx"].lower()
 
     def test_jimeng_zh_contains_chinese_quality_words(self):
-        from shoplive.backend.api.hot_video_api import _build_engine_prompts
+        from backend.api.hot_video_api import _build_engine_prompts
         prompts = _build_engine_prompts("基础提示词", {}, {"language": "zh", "product_name": "连衣裙", "duration": 16})
         assert any(k in prompts["jimeng"] for k in ["高清", "通透", "暖调", "质感"])
 
     def test_fallback_base_uses_context_if_empty(self):
-        from shoplive.backend.api.hot_video_api import _build_engine_prompts
+        from backend.api.hot_video_api import _build_engine_prompts
         prompts = _build_engine_prompts("", {}, {"language": "en", "product_name": "shirt", "duration": 8})
         assert "shirt" in prompts["veo"]
 
 
 class TestAnalysisMessagesEngineStyle:
     def test_veo_engine_style_in_system_prompt(self):
-        from shoplive.backend.api.hot_video_api import _build_analysis_messages
+        from backend.api.hot_video_api import _build_analysis_messages
         messages = _build_analysis_messages(
             {"language": "zh", "video_engine": "veo", "duration": 16},
             [],
@@ -413,7 +413,7 @@ class TestAnalysisMessagesEngineStyle:
         assert "摄像机" in system_content or "电影" in system_content
 
     def test_jimeng_engine_style_in_system_prompt(self):
-        from shoplive.backend.api.hot_video_api import _build_analysis_messages
+        from backend.api.hot_video_api import _build_analysis_messages
         messages = _build_analysis_messages(
             {"language": "zh", "video_engine": "jimeng", "duration": 16},
             [],
@@ -424,7 +424,7 @@ class TestAnalysisMessagesEngineStyle:
         assert "美学" in system_content or "色调" in system_content
 
     def test_product_anchors_woven_into_prompt_instructions(self):
-        from shoplive.backend.api.hot_video_api import _build_analysis_messages
+        from backend.api.hot_video_api import _build_analysis_messages
         messages = _build_analysis_messages(
             {"language": "zh", "video_engine": "veo", "product_anchors": {"colors": ["红色"], "materials": ["棉麻"]}, "duration": 16},
             [],
@@ -439,7 +439,7 @@ class TestResponseNewFields:
 
     def test_engine_prompts_and_confidence_in_response(self, monkeypatch, hot_video_client):
         client, llm_state = hot_video_client
-        from shoplive.backend.api import hot_video_api as mod
+        from backend.api import hot_video_api as mod
 
         analysis_json = {
             "summary": "高转化视频。",
@@ -488,7 +488,7 @@ class TestResponseNewFields:
 
     def test_fallback_also_has_engine_prompts(self, monkeypatch, hot_video_client):
         client, llm_state = hot_video_client
-        from shoplive.backend.api import hot_video_api as mod
+        from backend.api import hot_video_api as mod
 
         llm_state["raise"] = RuntimeError("llm down")
         monkeypatch.setattr(mod, "_run_video_asr", lambda *a, **kw: {

@@ -7,7 +7,7 @@ import uuid
 
 from flask import Flask, request, send_from_directory
 
-from shoplive.backend.briefing import (
+from backend.briefing import (
     ALLOWED_VIDEO_DURATIONS,
     DEFAULT_VIDEO_DURATION,
     build_input_diff,
@@ -21,14 +21,14 @@ from shoplive.backend.briefing import (
     selfcheck_script,
     validate_shoplive_brief,
 )
-from shoplive.backend.infra import (
-    PROJECT_ROOT as SHOPLIVE_PROJECT_ROOT,
-    SHOPLIVE_DIR,
+from backend.infra import (
+    WORKSPACE_ROOT,
+    PROJECT_DIR,
     build_proxies,
     get_access_token,
     parse_common_payload,
 )
-from shoplive.backend.common.helpers import (
+from backend.common.helpers import (
     json_error,
     fetch_image_as_base64,
     normalize_reference_urls,
@@ -62,32 +62,32 @@ from shoplive.backend.common.helpers import (
     download_gcs_blob_to_file,
     normalize_timeline_video_segments,
 )
-from shoplive.backend.api.shoplive_api import register_shoplive_routes
-from shoplive.backend.api.agent_api import register_agent_routes
-from shoplive.backend.api.veo_api import register_veo_routes
-from shoplive.backend.api.media_api import register_media_routes
-from shoplive.backend.api.video_edit_api import register_video_edit_routes
-from shoplive.backend.api.hot_video_api import register_hot_video_routes
-from shoplive.backend.api.tabcode_api import register_tabcode_routes
-from shoplive.backend.api.ltxv_api import register_ltxv_routes
-from shoplive.backend.api.comfyui_ltxv_api import register_comfyui_ltxv_routes
-from shoplive.backend.api.jimeng_api import register_jimeng_routes
-from shoplive.backend.api.distribution_api import register_distribution_routes
-from shoplive.backend.tool_registry import build_tool_manifest, get_tools_by_skill, get_tools_by_tags
-from shoplive.backend.skills import get_skill_by_id, list_skills_summary
-from shoplive.backend.mcp_adapter import (
+from backend.api.shoplive_api import register_shoplive_routes
+from backend.api.agent_api import register_agent_routes
+from backend.api.veo_api import register_veo_routes
+from backend.api.media_api import register_media_routes
+from backend.api.video_edit_api import register_video_edit_routes
+from backend.api.hot_video_api import register_hot_video_routes
+from backend.api.tabcode_api import register_tabcode_routes
+from backend.api.ltxv_api import register_ltxv_routes
+from backend.api.comfyui_ltxv_api import register_comfyui_ltxv_routes
+from backend.api.jimeng_api import register_jimeng_routes
+from backend.api.distribution_api import register_distribution_routes
+from backend.tool_registry import build_tool_manifest, get_tools_by_skill, get_tools_by_tags
+from backend.skills import get_skill_by_id, list_skills_summary
+from backend.mcp_adapter import (
     build_mcp_tools_list,
     build_mcp_tools_by_skill,
     handle_mcp_request,
 )
-from shoplive.backend.audit import audit_log, setup_audit_middleware, get_trace_context
-from shoplive.backend.minimax_client import understand_image, understand_image_base64
-from shoplive.backend.infra import get_token_cache_stats
+from backend.audit import audit_log, setup_audit_middleware, get_trace_context
+from backend.minimax_client import understand_image, understand_image_base64
+from backend.infra import get_token_cache_stats
 
-FRONTEND_ROOT = (SHOPLIVE_DIR / "frontend").resolve()
+FRONTEND_ROOT = (PROJECT_DIR / "frontend").resolve()
 FRONTEND_PAGES_DIR = (FRONTEND_ROOT / "pages").resolve()
 app = Flask(__name__, static_folder=str(FRONTEND_ROOT), static_url_path="")
-VIDEO_EDIT_EXPORT_DIR = (SHOPLIVE_DIR / "video_edits").resolve()
+VIDEO_EDIT_EXPORT_DIR = (PROJECT_DIR / "video_edits").resolve()
 VIDEO_EDIT_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Setup audit middleware for automatic request tracing
@@ -165,7 +165,7 @@ SHOPLIVE_VIDEO_SYSTEM_PROMPT = """
 """.strip()
 
 
-# Shoplive brief/prompt helpers moved to `shoplive.backend.briefing`.
+# Shoplive brief/prompt helpers moved to `backend.briefing`.
 register_shoplive_routes(
     app,
     json_error=json_error,
@@ -392,10 +392,10 @@ def api_health():
     """
     import sys
     from flask import jsonify as _jsonify
-    from shoplive.backend.tool_registry import TOOL_REGISTRY
+    from backend.tool_registry import TOOL_REGISTRY
 
-    from shoplive.backend.async_executor import product_insight_cache
-    from shoplive.backend.scraper.fetchers import get_playwright_pool_stats
+    from backend.async_executor import product_insight_cache
+    from backend.scraper.fetchers import get_playwright_pool_stats
 
     stats = audit_log.get_stats()
     token_stats = get_token_cache_stats()
@@ -486,8 +486,8 @@ def api_openapi_spec():
     if _openapi_spec_cache:
         return _jsonify(_openapi_spec_cache)
 
-    from shoplive.backend.schemas import TOOL_SCHEMAS
-    from shoplive.backend.tool_registry import TOOL_REGISTRY
+    from backend.schemas import TOOL_SCHEMAS
+    from backend.tool_registry import TOOL_REGISTRY
 
     # Build components/schemas from Pydantic models
     component_schemas: dict = {}

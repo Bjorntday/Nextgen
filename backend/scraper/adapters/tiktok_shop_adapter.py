@@ -2,7 +2,7 @@ import html
 import json
 import re
 
-from shoplive.backend.scraper.adapters.generic_adapter import (
+from backend.scraper.adapters.generic_adapter import (
     clean_text,
     extract_review_lines,
     extract_review_signals,
