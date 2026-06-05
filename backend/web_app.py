@@ -72,6 +72,7 @@ from shoplive.backend.api.tabcode_api import register_tabcode_routes
 from shoplive.backend.api.ltxv_api import register_ltxv_routes
 from shoplive.backend.api.comfyui_ltxv_api import register_comfyui_ltxv_routes
 from shoplive.backend.api.jimeng_api import register_jimeng_routes
+from shoplive.backend.api.distribution_api import register_distribution_routes
 from shoplive.backend.tool_registry import build_tool_manifest, get_tools_by_skill, get_tools_by_tags
 from shoplive.backend.skills import get_skill_by_id, list_skills_summary
 from shoplive.backend.mcp_adapter import (
@@ -270,6 +271,7 @@ register_comfyui_ltxv_routes(
     json_error=json_error,
     video_export_dir=VIDEO_EDIT_EXPORT_DIR,
 )
+register_distribution_routes(app, json_error=json_error)
 
 # ---------------------------------------------------------------------------
 # Tool Manifest API (Article: "LLM 友好的接口设计")

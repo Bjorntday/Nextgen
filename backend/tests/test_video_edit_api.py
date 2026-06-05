@@ -16,12 +16,19 @@ Covered endpoints:
 """
 
 import base64
+import shutil
 import subprocess
 import tempfile
 import time
 from pathlib import Path
 
 import pytest
+
+
+pytestmark = pytest.mark.skipif(
+    shutil.which("ffmpeg") is None,
+    reason="ffmpeg is required for video editing integration tests",
+)
 
 
 def _drawtext_available() -> bool:

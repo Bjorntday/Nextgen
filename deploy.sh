@@ -5,7 +5,7 @@
 set -e
 
 PROJECT_DIR="/opt/nextgen"
-REPO_URL="https://github.com/Bjorntday/Nextgen.git"
+REPO_URL="git@github.com:Bjorntday/Nextgen.git"
 SERVICE_NAME="nextgen"
 
 echo "=== NextGen Studio 部署脚本 ==="
@@ -23,19 +23,19 @@ fi
 echo "[2/5] 克隆项目..."
 mkdir -p "$PROJECT_DIR"
 cd "$PROJECT_DIR"
-if [ -d "Shoplive-main/.git" ]; then
-    cd Shoplive-main && git pull
+if [ -d "nextgen/.git" ]; then
+    cd nextgen && git pull
 else
-    git clone "$REPO_URL" Shoplive-main
+    git clone "$REPO_URL" nextgen
 fi
 
 # 3. 创建 shoplive 符号链接（解决 Python import 路径）
 echo "[3/5] 创建符号链接..."
-ln -sf "$PROJECT_DIR/Shoplive-main" "$PROJECT_DIR/shoplive"
+ln -sf "$PROJECT_DIR/nextgen" "$PROJECT_DIR/shoplive"
 
 # 4. 安装 Python 依赖
 echo "[4/5] 安装 Python 依赖..."
-cd "$PROJECT_DIR/Shoplive-main"
+cd "$PROJECT_DIR/nextgen"
 pip3 install -r requirements.txt
 
 # 5. 安装 systemd 服务

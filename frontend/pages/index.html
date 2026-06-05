@@ -3,22 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#F5F5F7" />
+  <meta name="theme-color" content="#F5F7FB" />
   <meta name="description" content="NextGen — AI 电商内容工作台" />
   <link rel="icon" href="/assets/image.png" />
   <title>NextGen Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
-:root { --primary: #007AFF; --text: #1D1D1F; --text2: #6E6E73; --text3: #99999D; --bg: #F5F5F7; --card: #FFFFFF; --muted: #F9F9FB; --border: rgba(0,0,0,0.06); --red: #FF3B30; --radius-lg: 16px; --radius-md: 10px; --radius-sm: 8px; --shadow: 0 2px 12px rgba(0,0,0,0.06); }
+:root { --primary: #007AFF; --accent:#FF6B35; --success:#34C759; --text: #1D2433; --text2: #5F6C80; --text3: #8A95A8; --bg: #F5F7FB; --panel:#EEF4FF; --card: #FFFFFF; --muted: #F0F4FA; --border: rgba(27,43,65,0.08); --red: #FF3B30; --radius-lg: 18px; --radius-md: 12px; --radius-sm: 8px; --shadow: 0 18px 42px rgba(31, 45, 72, 0.10); --glow:0 14px 34px rgba(0,122,255,0.16); }
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+body {
+  font-family:'Inter',-apple-system,sans-serif;
+  background:
+    linear-gradient(rgba(87, 112, 148, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(87, 112, 148, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #F7FAFF 0%, #F4F7FB 42%, #EEF3F9 100%);
+  background-size: 24px 24px, 24px 24px, auto;
+  color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased;
+}
 
-/* Sidebar - white */
+/* Sidebar */
 .sidebar {
   position:fixed; left:0; top:0; bottom:0; width:64px;
   background:#FFFFFF; border-right:1px solid var(--border);
   display:flex; flex-direction:column; align-items:center; padding:16px 10px;
-  z-index:100; box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  z-index:100; box-shadow:0 8px 24px rgba(31,45,72,0.08);
 }
 .sidebar-logo { width:30px; height:30px; border-radius:6px; margin-bottom:16px; }
 .nav-item {
@@ -27,76 +35,121 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
   position:relative; transition:all 0.15s; margin-bottom:4px;
 }
 .nav-item:hover { background:rgba(0,122,255,0.06); color:var(--primary); }
-.nav-item.active { background:rgba(0,122,255,0.08); color:var(--primary); }
+.nav-item.active { background:rgba(0,122,255,0.18); color:var(--primary); }
 .nav-item svg { width:20px; height:20px; }
 .nav-tooltip {
   position:absolute; left:54px; top:50%; transform:translateY(-50%);
-  background:#1D1D1F; color:#fff; font-size:11px; padding:4px 10px;
+  background:#1D2433; color:#fff; font-size:11px; padding:4px 10px;
   border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0;
   transition:opacity 0.15s;
 }
 .nav-item:hover .nav-tooltip { opacity:1; }
 
 .main { margin-left:64px; min-height:100vh; }
-.page-inner { max-width:960px; margin:0 auto; padding:40px 36px 60px; }
+.page-inner { max-width:1160px; margin:0 auto; padding:34px 36px 60px; }
 
 /* Hero Banner */
 .hero-banner {
-  background:linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
-  border-radius:var(--radius-lg); padding:40px 44px; margin-bottom:32px;
-  color:#fff; display:flex; align-items:center; justify-content:space-between;
-  position:relative; overflow:hidden;
-}
-.hero-banner::after {
-  content:''; position:absolute; right:-20px; top:-30px; width:200px; height:200px;
-  background:rgba(255,255,255,0.06); border-radius:50%;
+  background:
+    linear-gradient(135deg, rgba(0,122,255,0.12), rgba(255,107,53,0.06) 54%, rgba(255,255,255,0.96)),
+    var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:34px 36px; margin-bottom:18px;
+  color:var(--text); display:flex; align-items:center; justify-content:space-between;
+  position:relative; overflow:hidden; box-shadow:var(--shadow);
 }
 .hero-banner .hb-left { position:relative; z-index:1; }
-.hero-banner h1 { font-size:28px; font-weight:800; letter-spacing:-0.5px; }
-.hero-banner p { font-size:14px; opacity:0.85; margin-top:6px; max-width:400px; line-height:1.6; }
+.hero-banner h1 { font-size:30px; font-weight:800; letter-spacing:0; }
+.hero-banner p { font-size:14px; color:var(--text2); margin-top:8px; max-width:520px; line-height:1.7; }
 .hero-banner .hb-stats { display:flex; gap:28px; margin-top:16px; }
-.hero-banner .hb-stat { text-align:center; }
+.hero-banner .hb-stat { text-align:left; padding:10px 12px; min-width:94px; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,0.72); }
 .hero-banner .hb-stat strong { font-size:22px; font-weight:700; display:block; }
-.hero-banner .hb-stat span { font-size:11px; opacity:0.7; }
+.hero-banner .hb-stat span { font-size:11px; color:var(--text3); }
 
 /* Brand row (subtle) */
-.brand-row { display:flex; align-items:center; gap:8px; margin-bottom:24px; }
+.brand-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+  padding:10px 0;
+}
 .brand-row img { width:28px; height:28px; border-radius:7px; }
-.brand-row span { font-size:13px; color:var(--text2); font-weight:500; }
+.brand-row span { font-size:13px; color:var(--primary); font-weight:700; letter-spacing:0.3px; }
+.brand-row::after {
+  content:"本机部署版";
+  margin-left:auto;
+  padding:5px 10px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:rgba(255,255,255,0.72);
+  color:var(--text2);
+  font-size:12px;
+  font-weight:600;
+}
 
 /* Three cards - smaller, left color stripe */
-.card-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:36px; }
+.card-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:34px; }
+.section-head {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 12px;
+}
+.section-head h2 {
+  font-size:16px;
+  font-weight:800;
+  color:var(--text);
+}
+.section-head p {
+  color:var(--text3);
+  font-size:12px;
+  line-height:1.5;
+}
 .flow-card {
-  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  padding:20px 18px; text-decoration:none; transition:all 0.25s;
-  box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px;
+  background:rgba(255,255,255,0.92); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:22px 20px; text-decoration:none; transition:all 0.25s;
+  box-shadow:0 10px 28px rgba(31,45,72,0.08); display:flex; flex-direction:column; gap:12px;
   color:var(--text); position:relative; overflow:hidden;
 }
 .flow-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
 .flow-card.video::before { background:var(--primary); }
 .flow-card.image::before { background:#FF6B35; }
 .flow-card.dist::before { background:#52C41A; }
-.flow-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,0.10); }
+.flow-card:hover { transform:translateY(-3px); box-shadow:var(--glow); border-color:rgba(0,122,255,0.26); }
 .flow-card .fc-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
-.flow-card .fc-icon.video { background:rgba(0,122,255,0.08); color:var(--primary); }
-.flow-card .fc-icon.image { background:rgba(255,107,53,0.08); color:#FF6B35; }
-.flow-card .fc-icon.dist { background:rgba(82,196,26,0.08); color:#52C41A; }
+.flow-card .fc-icon.video { background:rgba(0,122,255,0.10); color:var(--primary); }
+.flow-card .fc-icon.image { background:rgba(255,107,53,0.10); color:var(--accent); }
+.flow-card .fc-icon.dist { background:rgba(52,199,89,0.10); color:var(--success); }
 .flow-card h3 { font-size:15px; font-weight:700; }
+.flow-card h3::before {
+  display:block;
+  margin-bottom:6px;
+  color:var(--text3);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.6px;
+}
+.flow-card.video h3::before { content:"STEP 01"; }
+.flow-card.image h3::before { content:"STEP 02"; }
+.flow-card.dist h3::before { content:"STEP 03"; }
 .flow-card .fc-desc { font-size:12px; color:var(--text2); line-height:1.6; }
 .flow-card .fc-btn {
   display:inline-block; padding:6px 18px; border-radius:18px; font-size:12px;
-  font-weight:600; background:var(--primary); color:#fff; align-self:flex-start;
+  font-weight:600; background:rgba(0,122,255,0.08); border:1px solid rgba(0,122,255,0.18); color:var(--primary); align-self:flex-start;
   transition:all 0.15s;
 }
-.flow-card:hover .fc-btn { box-shadow:0 4px 14px rgba(0,122,255,0.3); }
+.flow-card:hover .fc-btn { background:var(--primary); color:#fff; box-shadow:0 4px 14px rgba(0,122,255,0.3); }
 
 /* Asset strip */
 .asset-section { margin-bottom:36px; }
 .asset-section h2 { font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-.asset-count { font-size:11px; color:var(--text3); font-weight:400; background:var(--muted); padding:2px 8px; border-radius:10px; }
+.asset-count { font-size:11px; color:var(--text2); font-weight:400; background:rgba(36,48,79,0.7); padding:2px 8px; border-radius:10px; }
 .asset-manage { font-size:11px; color:var(--primary); font-weight:500; text-decoration:none; margin-left:auto; padding:3px 10px; border:1px solid rgba(0,122,255,0.2); border-radius:12px; transition:all 0.15s; }
 .asset-manage:hover { background:rgba(0,122,255,0.06); }
 .asset-filters { display:flex; gap:6px; margin-bottom:10px; }
+.asset-count { background:var(--muted); }
 .filter-btn { padding:4px 12px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--text2); font-size:11px; cursor:pointer; transition:all 0.15s; }
 .filter-btn:hover { border-color:var(--primary); color:var(--primary); }
 .filter-btn.active { background:var(--primary); border-color:var(--primary); color:#fff; }
@@ -127,7 +180,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 .btn-manage { padding:5px 12px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text2); font-size:11px; cursor:pointer; transition:all 0.15s; }
 .btn-manage:hover { border-color:var(--primary); color:var(--primary); }
 .btn-manage.danger { color:var(--red); border-color:rgba(255,59,48,0.3); }
-.btn-manage.danger:hover { background:#FEE; }
+.btn-manage.danger:hover { background:rgba(255,59,48,0.12); }
 .manage-info { font-size:11px; color:var(--text3); }
 .asset-manager-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; }
 .asset-manager-grid .asset-item { width:100%; height:130px; }
@@ -136,8 +189,9 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 .asset-manager-grid .asset-item .asset-prompt { position:absolute; bottom:0; left:0; right:0; padding:4px 6px; background:linear-gradient(transparent,rgba(0,0,0,0.75)); color:#fff; font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .asset-empty {
   display:flex; flex-direction:column; align-items:center; gap:16px;
-  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  padding:36px 24px; text-align:center;
+  width:100%;
+  background:rgba(255,255,255,0.92); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:36px 24px; text-align:center; box-shadow:0 10px 28px rgba(31,45,72,0.08);
 }
 .asset-empty svg { opacity:0.25; }
 .asset-empty p { color:var(--text3); font-size:13px; max-width:300px; }
@@ -148,7 +202,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 }
 .asset-empty .empty-btn.primary { background:var(--primary); color:#fff; border:none; }
 .asset-empty .empty-btn.primary:hover { box-shadow:0 4px 14px rgba(0,122,255,0.3); }
-.asset-empty .empty-btn.secondary { background:var(--card); color:var(--primary); border:1px solid var(--primary); }
+.asset-empty .empty-btn.secondary { background:var(--card); color:var(--primary); border:1px solid rgba(0,122,255,0.38); }
 .asset-empty .empty-btn.secondary:hover { background:rgba(0,122,255,0.06); }
 .asset-link { display:inline-block; margin-top:8px; font-size:12px; color:var(--primary); text-decoration:none; }
 
@@ -157,10 +211,10 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 .template-section h2 { font-size:15px; font-weight:700; margin-bottom:14px; }
 .template-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
 .template-card {
-  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  background:rgba(255,255,255,0.92); border:1px solid var(--border); border-radius:var(--radius-md);
   overflow:hidden; cursor:pointer; transition:all 0.2s; text-align:left;
 }
-.template-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); border-color:rgba(0,122,255,0.2); }
+.template-card:hover { transform:translateY(-3px); box-shadow:var(--glow); border-color:rgba(0,122,255,0.26); }
 .template-card img { width:100%; height:120px; object-fit:cover; display:block; }
 .template-card .tc-body { padding:12px; }
 .template-card .tc-tag { font-size:10px; color:var(--primary); text-transform:uppercase; font-weight:700; letter-spacing:0.5px; }
@@ -186,25 +240,22 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 <!-- Sidebar - white -->
 <aside class="sidebar">
   <a href="/pages/index.html"><img class="sidebar-logo" src="/assets/image.png" /></a>
-  <a href="#" class="nav-item active">
+  <a href="/pages/agent.html" class="nav-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
-    <span class="nav-tooltip">创意工坊</span>
-  </a>
-  <a href="/pages/distribute.html" class="nav-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-    <span class="nav-tooltip">智能分发</span>
+    <span class="nav-tooltip">做视频</span>
   </a>
   <a href="/pages/image-editor.html" class="nav-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
-    <span class="nav-tooltip">素材编辑</span>
+    <span class="nav-tooltip">做图片</span>
+  </a>
+  <a href="/pages/distribute.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+    <span class="nav-tooltip">去分发</span>
   </a>
   <a href="/pages/settings.html" class="nav-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
     <span class="nav-tooltip">设置</span>
   </a>
-  <div style="margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:6px;">
-    <div id="userDot" style="width:10px;height:10px;border-radius:50%;background:#f0b429;" title="游客"></div>
-  </div>
 </aside>
 
 <main class="main">
@@ -220,12 +271,19 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
     <div class="hero-banner">
       <div class="hb-left">
         <h1>AI 电商内容工作台</h1>
-        <p>从商品图到短视频，从素材编辑到一键多平台分发，AI 全链路提效</p>
+        <p>在本机完成商品图生成、短视频制作和多平台分发，素材与模型配置统一沉淀。</p>
         <div class="hb-stats">
-          <div class="hb-stat"><strong>10,000+</strong><span>创作者在用</span></div>
-          <div class="hb-stat"><strong>3min</strong><span>出片速度</span></div>
-          <div class="hb-stat"><strong>6</strong><span>平台覆盖</span></div>
+          <div class="hb-stat"><strong>3</strong><span>核心工作流</span></div>
+          <div class="hb-stat"><strong>本机</strong><span>资产留存</span></div>
+          <div class="hb-stat"><strong>统一</strong><span>模型中心</span></div>
         </div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <div>
+        <h2>选择工作流</h2>
+        <p>从内容生产到分发，按当前任务进入对应工具。</p>
       </div>
     </div>
 
@@ -514,16 +572,6 @@ const TEMPLATES = {
   renderStrip();
 })();
 
-(function() {
-  const logged = localStorage.getItem('shoplive_token')==='logged_in';
-  const user = localStorage.getItem('shoplive_user')||'';
-  const dot = document.getElementById('userDot');
-  if (logged&&user){dot.style.background='#4caf6e';dot.title=user;}
-  dot.onclick = () => {
-    if (logged){if(confirm('退出登录？')){localStorage.removeItem('shoplive_token');localStorage.removeItem('shoplive_user');location.reload();}}
-    else location.href='/pages/login.html';
-  };
-})();
 </script>
 </body>
 </html>

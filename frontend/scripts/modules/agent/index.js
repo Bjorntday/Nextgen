@@ -536,7 +536,7 @@ function renderWorkspaceTab(el, label, kind) {
 }
 
 function applyLang() {
-  localStorage.setItem("shoplive.lang", currentLang);
+  try { localStorage.setItem("shoplive.lang", currentLang); } catch (_e) {}
   chatInput.placeholder = t("inputPh");
   uploadBtn.textContent = t("upload");
   sendBtn.textContent = t("send");
@@ -630,10 +630,153 @@ const DURATION_OPTIONS = {
 };
 
 function syncVideoEngineChips() {
+  renderVideoEngineChips();
   const eng = state.videoEngine || "veo";
   document.querySelectorAll("[data-video-engine]").forEach((btn) => {
     btn.classList.toggle("active", btn.getAttribute("data-video-engine") === eng);
   });
+  updateVideoEngineStatus();
+}
+
+const VIDEO_ENGINE_PROVIDER_MAP = {
+  ltx: "ltx",
+  jimeng: "jimeng-video",
+  veo: "veo",
+  grok: "tabcode",
+};
+
+const VIDEO_ENGINE_LABELS = {
+  ltx: "LTX 2.3",
+  jimeng: "即梦 3.0",
+  veo: "Veo 3.1",
+  grok: "Grok Video",
+};
+
+const VIDEO_PROVIDER_ENGINE_MAP = {
+  ltx: "ltx",
+  "jimeng-video": "jimeng",
+  veo: "veo",
+  tabcode: "grok",
+};
+
+function parseProviderModel(value, fallbackProvider = "", fallbackModel = "") {
+  const parts = String(value || "").split(":");
+  const provider = parts.shift() || fallbackProvider;
+  return {
+    provider,
+    model: parts.join(":") || fallbackModel || "",
+  };
+}
+
+function getSavedApiConfig() {
+  try {
+    return JSON.parse(localStorage.getItem("nextgen_api_config") || "{}");
+  } catch (_e) {
+    return {};
+  }
+}
+
+function getVideoDefaultSelection(cfg = getSavedApiConfig()) {
+  return parseProviderModel(cfg.defaults && cfg.defaults.video, "jimeng-video", "jimeng-video-3.0");
+}
+
+function getVideoProviderModel(cfg, providerId) {
+  const savedProvider = (cfg.video || {})[providerId] || {};
+  const defaults = getVideoDefaultSelection(cfg);
+  return savedProvider.model || (defaults.provider === providerId ? defaults.model : "");
+}
+
+function renderVideoEngineChips() {
+  const cfg = getSavedApiConfig();
+  const defaults = getVideoDefaultSelection(cfg);
+  document.querySelectorAll("[data-video-engine]").forEach((btn) => {
+    const engine = btn.getAttribute("data-video-engine") || "";
+    const providerId = VIDEO_ENGINE_PROVIDER_MAP[engine] || engine;
+    const label = VIDEO_ENGINE_LABELS[engine] || providerId;
+    const modelName = getVideoProviderModel(cfg, providerId);
+    btn.innerHTML = `<span class="chip-main">${label}</span>${modelName ? `<span class="chip-sub">${modelName}</span>` : ""}`;
+    if (modelName) btn.title = `${label} · ${modelName}`;
+  });
+
+  const row = document.querySelector(".video-engine-inline");
+  if (!row) return;
+  const oldDefaultOnly = row.querySelector("[data-default-video-provider]");
+  if (oldDefaultOnly) oldDefaultOnly.remove();
+  if (!VIDEO_PROVIDER_ENGINE_MAP[defaults.provider] && defaults.provider) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "engine-chip default-only";
+    btn.disabled = true;
+    btn.dataset.defaultVideoProvider = defaults.provider;
+    btn.title = "Default model is saved, but this video workspace has not connected this provider yet.";
+    btn.innerHTML = `<span class="chip-main">${defaults.provider}</span><span class="chip-sub">${defaults.model || "default"}</span>`;
+    row.appendChild(btn);
+  }
+}
+
+function getConfiguredVideoProvider() {
+  try {
+    const cfg = getSavedApiConfig();
+    const providerId = VIDEO_ENGINE_PROVIDER_MAP[state.videoEngine || "veo"] || "veo";
+    return {
+      cfg,
+      providerId,
+      provider: (cfg.video || {})[providerId] || null,
+    };
+  } catch (_e) {
+    return { cfg: {}, providerId: VIDEO_ENGINE_PROVIDER_MAP[state.videoEngine || "veo"] || "veo", provider: null };
+  }
+}
+
+function updateVideoEngineStatusLegacy() {
+  const node = document.getElementById("videoEngineStatus");
+  if (!node) return;
+  const label = VIDEO_ENGINE_LABELS[state.videoEngine || "veo"] || "Veo 3.1";
+  const { provider, providerId } = getConfiguredVideoProvider();
+  const hasKey = Boolean(provider && provider.key);
+  const modelName = provider && provider.model ? provider.model : "";
+  node.classList.toggle("ready", hasKey);
+  node.classList.toggle("missing", !hasKey);
+  const text = node.querySelector("span");
+  const link = node.querySelector("a");
+  if (text) {
+    text.textContent = hasKey
+      ? `当前模型：${label} · ${modelName || "默认模型"}`
+      : `当前模型：${label} · 未配置 Key`;
+  }
+  if (link) link.href = `/pages/settings.html#video-models-${providerId}`;
+}
+
+function updateVideoEngineStatus() {
+  const node = document.getElementById("videoEngineStatus");
+  if (!node) return;
+  const label = VIDEO_ENGINE_LABELS[state.videoEngine || "veo"] || "Veo 3.1";
+  const { cfg, provider, providerId } = getConfiguredVideoProvider();
+  const defaults = getVideoDefaultSelection(cfg);
+  const hasKey = Boolean(provider && provider.key);
+  const modelName = getVideoProviderModel(cfg, providerId);
+  const unsupportedDefault = Boolean(defaults.provider && !VIDEO_PROVIDER_ENGINE_MAP[defaults.provider]);
+  node.classList.toggle("ready", hasKey && !unsupportedDefault);
+  node.classList.toggle("missing", !hasKey || unsupportedDefault);
+  const text = node.querySelector("span");
+  const link = node.querySelector("a");
+  if (text) {
+    if (unsupportedDefault) {
+      text.textContent = `默认模型：${defaults.provider} · ${defaults.model || "默认模型"} · 当前视频工作台暂未接入`;
+    } else {
+      text.textContent = hasKey
+        ? `当前模型：${label} · ${modelName || "默认模型"}`
+        : `当前模型：${label} · 未配置 Key`;
+    }
+  }
+  if (link) link.href = `/pages/settings.html#video-models-${unsupportedDefault ? defaults.provider : providerId}`;
+}
+
+function applyConfiguredVideoDefault() {
+  try {
+    const providerId = getVideoDefaultSelection(getSavedApiConfig()).provider;
+    if (VIDEO_PROVIDER_ENGINE_MAP[providerId]) state.videoEngine = VIDEO_PROVIDER_ENGINE_MAP[providerId];
+  } catch (_e) { /* ignore */ }
 }
 
 function updateDurationOptions() {
@@ -5858,17 +6001,20 @@ function _updateEditCmdsBar() {
 
 applyLang();
 syncSimpleControlsFromState();
+applyConfiguredVideoDefault();
 (function initVideoEngineChipsOnce() {
   document.querySelectorAll("[data-video-engine]").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.videoEngine = btn.getAttribute("data-video-engine") || "veo";
       syncVideoEngineChips();
       updateDurationOptions();
+      updateVideoEngineStatus();
     });
   });
   syncVideoEngineChips();
 })();
 updateDurationOptions();
+updateVideoEngineStatus();
 updateGenerationGateUI();
 applyWorkspaceMode();
 // Wire up cross-module callbacks after all functions are defined

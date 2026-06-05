@@ -47,6 +47,7 @@
     initHistory();
     loadHistory();
     updateEmptyStateText();
+    updateCanvasStatus();
     loadTemplate();
   }
 
@@ -75,7 +76,16 @@
         const tab = btn.dataset.tab;
         $('#aiSection').style.display = tab === 'ai' ? '' : 'none';
         $('#editSection').style.display = tab === 'edit' ? '' : 'none';
+        if (tab === 'edit') {
+          const current = state.results[state.currentIndex] || state.results[0];
+          if (current) {
+            showPreview(current.url);
+          }
+        } else if (state.results.length) {
+          renderResults(state.results);
+        }
         updateEmptyStateText();
+        updateCanvasStatus();
       });
     });
   }
@@ -87,6 +97,15 @@
     recraft:'Recraft', pixverse:'Pixverse', 'kling-image':'可灵'
   };
 
+  function parseProviderModel(value, fallbackProvider, fallbackModel) {
+    const parts = String(value || '').split(':');
+    const provider = parts.shift() || fallbackProvider;
+    return {
+      provider,
+      model: parts.join(':') || fallbackModel || '',
+    };
+  }
+
   function loadModelChips() {
     const container = $('#modelChips');
     if (!container) return;
@@ -94,10 +113,14 @@
 
     // Read configured providers from settings
     let configuredProviders = [];
-    let defaultModel = 'jimeng';
+    let defaultProvider = 'jimeng';
+    let defaultModelName = 'jimeng-5.0';
+    let cfg = {};
     try {
-      const cfg = JSON.parse(localStorage.getItem('nextgen_api_config') || '{}');
-      defaultModel = (cfg.defaults && cfg.defaults.image) ? cfg.defaults.image.split(':')[0] : 'jimeng';
+      cfg = JSON.parse(localStorage.getItem('nextgen_api_config') || '{}');
+      const parsedDefault = parseProviderModel(cfg.defaults && cfg.defaults.image, 'jimeng', 'jimeng-5.0');
+      defaultProvider = parsedDefault.provider;
+      defaultModelName = parsedDefault.model;
       const imageKeys = cfg.image || {};
       Object.keys(imageKeys).forEach(pid => {
         if (imageKeys[pid] && imageKeys[pid].key) configuredProviders.push(pid);
@@ -105,22 +128,28 @@
     } catch(e) {}
 
     // Always include default if not already present
-    if (!configuredProviders.includes(defaultModel)) configuredProviders.unshift(defaultModel);
+    if (!configuredProviders.includes(defaultProvider)) configuredProviders.unshift(defaultProvider);
     // Always include jimeng as fallback
     if (!configuredProviders.includes('jimeng')) configuredProviders.unshift('jimeng');
 
     // Render chips
     configuredProviders.slice(0, 6).forEach(pid => {
       const name = IMAGE_PROVIDER_MAP[pid] || pid;
+      const providerModel = (cfg.image && cfg.image[pid] && cfg.image[pid].model)
+        ? cfg.image[pid].model
+        : (pid === defaultProvider ? defaultModelName : '');
       const btn = document.createElement('button');
       btn.className = 'model-chip';
       btn.dataset.model = pid;
-      btn.textContent = name;
-      if (pid === defaultModel) btn.classList.add('active');
+      btn.dataset.modelName = providerModel;
+      btn.innerHTML = '<span class="chip-main">' + name + '</span>' + (providerModel ? '<span class="chip-sub">' + providerModel + '</span>' : '');
+      if (pid === defaultProvider) btn.classList.add('active');
       btn.addEventListener('click', () => {
         $$('.model-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         state.model = btn.dataset.model;
+        updateModelStatus();
+        updateCanvasStatus();
       });
       container.appendChild(btn);
     });
@@ -128,6 +157,7 @@
     // Set initial state
     const activeChip = container.querySelector('.model-chip.active');
     state.model = activeChip ? activeChip.dataset.model : (configuredProviders[0] || 'jimeng');
+    updateModelStatus();
   }
 
   function initModelChips() {
@@ -142,6 +172,7 @@
         btn.classList.add('active');
         state.mode = btn.dataset.mode;
         updateModeUI();
+        updateCanvasStatus();
       });
     });
   }
@@ -178,6 +209,7 @@
     }
 
     updateEmptyStateText();
+    updateCanvasStatus();
   }
 
   function updateEmptyStateText() {
@@ -336,6 +368,7 @@
         $$('.ratio-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         state.ratio = btn.dataset.ratio;
+        updateCanvasStatus();
       });
     });
 
@@ -346,15 +379,57 @@
         btn.classList.add('active');
         state.count = parseInt(btn.dataset.count);
         updateGenHint();
+        updateCanvasStatus();
       });
     });
 
     updateGenHint();
+    updateCanvasStatus();
   }
 
   function updateGenHint() {
     const hint = $('#genHint');
     if (hint) hint.textContent = state.count + ' 张图';
+  }
+
+  function updateCanvasStatus() {
+    const node = $('#canvasStatus');
+    if (!node) return;
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab && activeTab.dataset.tab === 'edit') {
+      node.textContent = '图片调整 · 预设校色 · 本地预览';
+      return;
+    }
+    const modeLabel = {
+      txt2img: '文生图',
+      img2img: '图生图',
+      inpaint: '局部重绘',
+    }[state.mode] || '文生图';
+    const modelLabel = IMAGE_PROVIDER_MAP[state.model] || state.model || '即梦';
+    const countLabel = state.mode === 'inpaint' ? '蒙版重绘' : state.count + '张';
+    node.textContent = `${modeLabel} · ${modelLabel} · ${state.ratio} · ${countLabel}`;
+  }
+
+  function updateModelStatus() {
+    const node = $('#modelStatus');
+    if (!node) return;
+    const modelLabel = IMAGE_PROVIDER_MAP[state.model] || state.model || '即梦';
+    let hasKey = false;
+    let modelName = '';
+    try {
+      const cfg = JSON.parse(localStorage.getItem('nextgen_api_config') || '{}');
+      const provider = (cfg.image || {})[state.model];
+      hasKey = !!(provider && provider.key);
+      const defaultImage = parseProviderModel(cfg.defaults && cfg.defaults.image, 'jimeng', 'jimeng-5.0');
+      modelName = provider && provider.model ? provider.model : (defaultImage.provider === state.model ? defaultImage.model : '');
+    } catch (e) { /* ignore */ }
+    node.classList.toggle('ready', hasKey);
+    node.classList.toggle('missing', !hasKey);
+    node.querySelector('span').textContent = hasKey
+      ? `当前模型：${modelLabel} · ${modelName || '默认模型'}`
+      : `当前模型：${modelLabel} · 未配置 Key`;
+    const link = node.querySelector('a');
+    if (link) link.href = `/pages/settings.html#image-models-${state.model}`;
   }
 
   // ========== 生成按钮 ==========
@@ -367,6 +442,14 @@
     const prompt = $('#promptInput').value.trim();
     if (!prompt && state.mode !== 'inpaint') {
       alert('请输入图片描述');
+      return;
+    }
+    if (state.mode === 'img2img' && !state.refImage) {
+      alert('请先上传参考图');
+      return;
+    }
+    if (state.mode === 'inpaint' && !state.results.length) {
+      alert('请先上传需要局部重绘的图片');
       return;
     }
 
@@ -471,6 +554,8 @@
     const grid = $('#resultGrid');
     grid.style.display = 'grid';
     grid.innerHTML = '';
+    $('#previewWrap').style.display = 'none';
+    $('#emptyState').style.display = 'none';
 
     results.forEach((r, i) => {
       const item = document.createElement('div');
@@ -478,31 +563,63 @@
       item.innerHTML = `
         <img src="${r.url}" alt="结果${i + 1}" />
         <div class="result-actions">
-          <button data-action="select">查看</button>
+          <button data-action="upscale">U${i + 1}</button>
+          <button data-action="variant">V${i + 1}</button>
+          <button data-action="save">保存</button>
           <button data-action="download">下载</button>
         </div>
       `;
-      item.querySelector('[data-action="select"]').addEventListener('click', () => {
+      item.querySelector('img').addEventListener('click', () => {
         showModal(r.url);
+      });
+      item.querySelector('[data-action="upscale"]').addEventListener('click', () => {
+        showModal(r.url);
+      });
+      item.querySelector('[data-action="variant"]').addEventListener('click', () => {
+        makeVariant(r, i);
+      });
+      item.querySelector('[data-action="save"]').addEventListener('click', () => {
+        saveToHistory([r], $('#promptInput').value.trim() || '保存结果');
+        toast('已保存到素材库');
       });
       item.querySelector('[data-action="download"]').addEventListener('click', () => {
         downloadImage(r.url, `nextgen-${Date.now()}.jpg`);
       });
       grid.appendChild(item);
     });
-
-    // 默认显示第一张
-    if (results.length > 0) {
-      showPreview(results[0].url);
-    }
   }
 
   function showPreview(url) {
     const idx = state.results.findIndex((r) => r.url === url);
     state.currentIndex = idx >= 0 ? idx : 0;
+    $('#resultGrid').style.display = 'none';
+    $('#emptyState').style.display = 'none';
     $('#previewWrap').style.display = '';
     $('#previewImg').src = url;
     updateEmptyStateText();
+  }
+
+  function makeVariant(result, index) {
+    const variant = {
+      url: generateMockResults()[0].url,
+      index: state.results.length,
+      parent: index,
+    };
+    state.results.splice(index + 1, 0, variant);
+    renderResults(state.results);
+  }
+
+  function toast(message) {
+    let node = document.querySelector('.editor-toast');
+    if (!node) {
+      node = document.createElement('div');
+      node.className = 'editor-toast';
+      document.body.appendChild(node);
+    }
+    node.textContent = message;
+    node.classList.add('show');
+    clearTimeout(node._timer);
+    node._timer = setTimeout(() => node.classList.remove('show'), 1600);
   }
 
   function downloadImage(url, filename) {
@@ -517,15 +634,19 @@
     const container = $('#previewContainer');
     const emptyState = $('#emptyState');
     const input = $('#imageInput');
+    const canUpload = () => {
+      const activeTab = document.querySelector('.tab-btn.active');
+      return (activeTab && activeTab.dataset.tab === 'edit') || state.mode === 'img2img' || state.mode === 'inpaint';
+    };
 
     emptyState.addEventListener('click', (e) => {
-      if (state.mode === 'edit' || state.mode === 'img2img' || state.mode === 'inpaint') {
+      if (canUpload()) {
         input.click();
       }
     });
     container.addEventListener('dragover', (e) => {
       e.preventDefault();
-      if (state.mode === 'edit' || state.mode === 'img2img' || state.mode === 'inpaint') {
+      if (canUpload()) {
         emptyState.classList.add('dragover');
       }
     });
@@ -535,7 +656,7 @@
     container.addEventListener('drop', (e) => {
       e.preventDefault();
       emptyState.classList.remove('dragover');
-      if (state.mode === 'edit' || state.mode === 'img2img' || state.mode === 'inpaint') {
+      if (canUpload()) {
         const file = e.dataTransfer.files[0];
         if (file && file.type.startsWith('image/')) loadImageToCanvas(file);
       }
@@ -556,6 +677,7 @@
     reader.onload = (e) => {
       state.results = [{ url: e.target.result, index: 0 }];
       $('#emptyState').style.display = 'none';
+      $('#resultGrid').style.display = 'none';
       showPreview(e.target.result);
       $('#genLoading').style.display = 'none';
     };
@@ -689,6 +811,8 @@
 
   function showModal(url) {
     state.modalImageUrl = url;
+    const idx = state.results.findIndex((r) => r.url === url);
+    if (idx >= 0) state.currentIndex = idx;
     $('#modalImg').src = url;
     $('#modal').style.display = '';
     $('#emptyState').style.display = 'none';

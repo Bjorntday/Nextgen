@@ -1,4 +1,12 @@
-export let currentLang = localStorage.getItem("shoplive.lang") || "zh";
+function readSavedLang() {
+  try {
+    return localStorage.getItem("shoplive.lang") || "zh";
+  } catch (_e) {
+    return "zh";
+  }
+}
+
+export let currentLang = readSavedLang();
 
 export function setCurrentLang(lang) { currentLang = lang; }
 

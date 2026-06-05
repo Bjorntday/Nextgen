@@ -80,15 +80,15 @@ select { cursor:pointer; }
 
 <aside class="sidebar">
   <a href="/pages/index.html"><img class="sidebar-logo" src="/assets/image.png" /></a>
-  <a href="/pages/index.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg></a>
-  <a href="/pages/distribute.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg></a>
-  <a href="/pages/image-editor.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg></a>
-  <a href="/pages/settings.html" class="nav-item active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></a>
+  <a href="/pages/agent.html" class="nav-item" title="做视频"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg></a>
+  <a href="/pages/image-editor.html" class="nav-item" title="做图片"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg></a>
+  <a href="/pages/distribute.html" class="nav-item" title="去分发"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg></a>
+  <a href="/pages/settings.html" class="nav-item active" title="设置"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></a>
 </aside>
 
 <main class="main">
-  <h1>模型配置</h1>
-  <p class="sub">基于 <a href="https://arena.ai/leaderboard/text" target="_blank" style="color:var(--primary);">LMSYS Arena</a> 排名配置模型</p>
+  <h1>模型中心</h1>
+  <p class="sub">统一管理文案、图片、视频模型；各功能页会自动读取这里的默认模型与 API Key。</p>
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('llm')">LLM 文案模型</button>
@@ -161,6 +161,7 @@ const INTL_IMAGE = ['imagen','flux','dalle','ideogram','recraft','midjourney','s
 
 const VIDEO_PROVIDERS = [
   { id:'veo', name:'Google Veo', models:['veo-3.1-audio','veo-3'], endpoint:'ai.google.dev', color:'#4285F4', rank:'Arena Top3', buyLink:'https://deepmind.google/' },
+  { id:'tabcode', name:'Grok Video (Tabcode)', models:['grok-imagine-1.0-video'], endpoint:'api.tabcode.ai', color:'#3F86FF', rank:'快速生成', buyLink:'#' },
   { id:'runway', name:'Runway', models:['runway-gen-4.5','runway-gen-4','runway-gen4-turbo'], endpoint:'api.runwayml.com', color:'#FF00AA', rank:'创作首选', buyLink:'https://runwayml.com/' },
   { id:'sora', name:'OpenAI Sora', models:['sora-2-pro','sora-2'], endpoint:'api.openai.com', color:'#10A37F', rank:'顶级质量', buyLink:'https://sora.com/' },
   { id:'pika', name:'Pika', models:['pika-v2.2','pika-v2'], endpoint:'api.pika.art', color:'#FFD700', rank:'创意工具', buyLink:'https://pika.art/' },
@@ -176,7 +177,7 @@ const VIDEO_PROVIDERS = [
   { id:'jimeng-video', name:'即梦视频', models:['jimeng-video-3.0'], color:'#FF2442', rank:'字节生态', buyLink:'https://jimeng.jianying.com/' },
 ];
 const CN_VIDEO = ['kling','jimeng-video','wan','vidu','minimax-video','seedance'];
-const INTL_VIDEO = ['veo','runway','sora','pika','ltx','luma','pixverse','happyhorse'];
+const INTL_VIDEO = ['veo','tabcode','runway','sora','pika','ltx','luma','pixverse','happyhorse'];
 
 let config = { llm:{}, image:{}, video:{}, custom:[], defaults:{llm:'anthropic:claude-sonnet-4-6',image:'jimeng:jimeng-5.0',video:'jimeng-video:jimeng-video-3.0'} };
 
@@ -185,6 +186,24 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelector('.tab:nth-child('+({llm:1,image:2,video:3,custom:4}[tab])+')').classList.add('active');
   document.getElementById('panel-'+tab).classList.add('active');
+}
+
+function applyHashRoute() {
+  const hash = location.hash.replace('#', '');
+  const providerMatch = hash.match(/^(image|video|llm)-models-(.+)$/);
+  const targetProvider = providerMatch ? providerMatch[2] : '';
+  if (hash === 'image-models' || hash.startsWith('image-models-')) switchTab('image');
+  if (hash === 'video-models' || hash.startsWith('video-models-')) switchTab('video');
+  if (hash === 'llm-models' || hash.startsWith('llm-models-')) switchTab('llm');
+  if (hash === 'custom-api') switchTab('custom');
+  if (targetProvider) {
+    setTimeout(function() {
+      const card = document.querySelector('.provider[data-provider="'+targetProvider+'"]');
+      if (!card) return;
+      card.classList.add('open');
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+    }, 0);
+  }
 }
 
 function renderLLMProviders() {
@@ -226,6 +245,8 @@ function createProviderCard(p, cat) {
 
   const d = document.createElement('div');
   d.className = 'provider';
+  d.dataset.provider = p.id;
+  d.dataset.cat = cat;
   d.innerHTML = '<div class="provider-header" onclick="this.parentElement.classList.toggle(\'open\')">'
     + '<span class="provider-name"><span class="provider-dot" style="background:'+(p.color||'#ccc')+'"></span>'+p.name+(p.rank?' <span class="provider-rank">'+p.rank+'</span>':'')+'</span>'
     + '<svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>'
@@ -294,12 +315,25 @@ function refreshDefaults() {
   fill('defaultVideo',vo,config.defaults.video);
 }
 
+function syncDefaultModelToProvider(cat, value) {
+  const parts = String(value || '').split(':');
+  const pid = parts.shift();
+  const model = parts.join(':');
+  if (!pid || !model) return;
+  if (!config[cat]) config[cat] = {};
+  if (!config[cat][pid]) config[cat][pid] = {};
+  config[cat][pid].model = model;
+}
+
 function saveAll() {
   document.querySelectorAll('.key-input').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider; if(!config[c][p])config[c][p]={}; config[c][p].key=el.value.trim();});
   document.querySelectorAll('.model-select').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider; if(!config[c][p])config[c][p]={}; config[c][p].model=el.value;});
   config.defaults.llm=document.getElementById('defaultLlm').value;
   config.defaults.image=document.getElementById('defaultImage').value;
   config.defaults.video=document.getElementById('defaultVideo').value;
+  syncDefaultModelToProvider('llm', config.defaults.llm);
+  syncDefaultModelToProvider('image', config.defaults.image);
+  syncDefaultModelToProvider('video', config.defaults.video);
   localStorage.setItem('nextgen_api_config',JSON.stringify(config));
   toast('配置已保存');
 }
@@ -318,7 +352,9 @@ renderLLMProviders();renderImageProviders();renderVideoProviders();renderCustom(
   try{const s=JSON.parse(localStorage.getItem('nextgen_api_config'));if(s){if(s.llm)config.llm=s.llm;if(s.image)config.image=s.image;if(s.video)config.video=s.video;if(s.custom)config.custom=s.custom;if(s.defaults)config.defaults=s.defaults;
   renderLLMProviders();renderImageProviders();renderVideoProviders();renderCustom();refreshDefaults();
   document.querySelectorAll('.key-input').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider;const sv=(s[c]||{})[p]||{};el.value=sv.key||'';});}}catch(e){}
+  applyHashRoute();
 })();
+window.addEventListener('hashchange', applyHashRoute);
 </script>
 </body>
 </html>

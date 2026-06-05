@@ -31,17 +31,17 @@
 <!-- 左侧导航 -->
 <aside class="sidebar">
   <a href="/pages/index.html"><img class="sidebar-logo" src="/assets/image.png" alt="NextGen" /></a>
-  <a href="/pages/index.html" class="nav-item">
+  <a href="/pages/agent.html" class="nav-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8h20M2 16h20"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
-    <span class="nav-tooltip">创意工坊</span>
-  </a>
-  <a href="/pages/distribute.html" class="nav-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-    <span class="nav-tooltip">智能分发</span>
+    <span class="nav-tooltip">做视频</span>
   </a>
   <a href="/pages/image-editor.html" class="nav-item active">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
-    <span class="nav-tooltip">素材编辑</span>
+    <span class="nav-tooltip">做图片</span>
+  </a>
+  <a href="/pages/distribute.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+    <span class="nav-tooltip">去分发</span>
   </a>
   <a href="/pages/settings.html" class="nav-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -77,10 +77,10 @@
 
       <!-- AI 生图模式 -->
       <div class="tool-section" id="aiSection">
-        <div class="section-header">
-          <div class="model-chips" id="modelChips">
-            <!-- populated dynamically from settings config -->
-          </div>
+        <div class="tool-hero">
+          <span class="tool-kicker">AI IMAGE</span>
+          <h1>AI 图片生成</h1>
+          <p>输入想法，生成电商素材。</p>
         </div>
 
         <!-- 模式 Tab：文生图 / 图生图 / 局部重绘 -->
@@ -90,20 +90,9 @@
           <button class="mode-tab" data-mode="inpaint">局部重绘</button>
         </div>
 
-        <!-- 风格预设快捷按钮 -->
-        <div class="style-presets" id="stylePresets">
-          <span class="preset-label">风格预设</span>
-          <div class="preset-btns">
-            <button class="preset-btn" data-style="clean" title="白色纯净背景">电商主图</button>
-            <button class="preset-btn" data-style="model" title="模特穿戴效果图">模特图</button>
-            <button class="preset-btn" data-style="scene" title="生活场景植入">场景图</button>
-            <button class="preset-btn" data-style="transparent" title="透明背景PNG">透明背景</button>
-          </div>
-        </div>
-
         <!-- 提示词区域 -->
         <div class="prompt-section">
-          <textarea class="prompt-input" id="promptInput" rows="3" placeholder="描述你想要的图片：商品外包装，白色背景，专业摄影光影，8K高清"></textarea>
+          <textarea class="prompt-input" id="promptInput" rows="3" placeholder="描述你想要生成的图片，例如：护肤品礼盒，白色背景，柔和摄影棚灯光，高级电商主图"></textarea>
           <div class="prompt-btns">
             <button class="btn-small" id="randomBtn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
@@ -113,6 +102,28 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               清空
             </button>
+          </div>
+        </div>
+
+        <!-- 风格预设快捷按钮 -->
+        <div class="style-presets" id="stylePresets">
+          <span class="preset-label">快捷风格</span>
+          <div class="preset-btns">
+            <button class="preset-btn" data-style="clean" title="白色纯净背景">电商主图</button>
+            <button class="preset-btn" data-style="model" title="模特穿戴效果图">模特图</button>
+            <button class="preset-btn" data-style="scene" title="生活场景植入">场景图</button>
+            <button class="preset-btn" data-style="transparent" title="透明背景PNG">透明背景</button>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <span class="section-title">模型</span>
+          <div class="model-chips" id="modelChips">
+            <!-- populated dynamically from settings config -->
+          </div>
+          <div class="model-status" id="modelStatus">
+            <span>当前模型：即梦</span>
+            <a href="/pages/settings.html#image-models">配置模型</a>
           </div>
         </div>
 
@@ -213,8 +224,14 @@
 
       <!-- 图片调整模式 -->
       <div class="tool-section" id="editSection" style="display:none">
+        <div class="tool-hero">
+          <span class="tool-kicker">IMAGE TUNE</span>
+          <h1>图片调整</h1>
+          <p>快速修正亮度、色彩和质感，用于出图前后的轻量处理。</p>
+        </div>
+
         <div class="section-header">
-          <span class="section-title">图片调整</span>
+          <span class="section-title">基础校正</span>
         </div>
         <div class="preset-row">
           <span class="preset-label">快速预设</span>
@@ -307,6 +324,8 @@
 
         <!-- 结果网格 -->
         <div class="result-grid" id="resultGrid" style="display:none"></div>
+
+        <div class="canvas-status" id="canvasStatus">文生图 · 即梦 · 16:9 · 2张</div>
       </div>
 
       <!-- 历史记录按钮 -->

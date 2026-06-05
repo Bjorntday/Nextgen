@@ -1,4 +1,4 @@
-$process = Start-Process -FilePath "D:\Anaconda\python.exe" -ArgumentList "backend\run.py" -WorkingDirectory "D:\project\shoplive" -NoNewWindow -PassThru
+$process = Start-Process -FilePath "D:\Anaconda\python.exe" -ArgumentList "backend\run.py" -WorkingDirectory "D:\project\nextgen" -NoNewWindow -PassThru
 Start-Sleep -Seconds 5
 if (-not $process.HasExited) {
     Write-Host "Server started successfully"
