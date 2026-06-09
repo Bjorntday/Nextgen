@@ -113,16 +113,82 @@
             <strong id="workflowTitle">AI 高清扣图 + 批量整理 + Excel 导出</strong>
             <p id="workflowDesc">适合外贸报价、工厂推广和电商运营。先把随手拍产品图处理成干净主图，再整理成可导出的资料。</p>
             <div class="workflow-actions">
-              <button class="workflow-action" type="button" data-action="use-template">套用模板</button>
+              <button class="workflow-action" type="button" data-action="use-template">应用方案</button>
               <button class="workflow-action muted" type="button" data-action="need-ref">上传产品图</button>
             </div>
           </div>
 
-          <!-- 色号应用面板（仅在「图案色号应用」工作流时显示） -->
-          <div class="color-panel" id="colorPanel" hidden>
-            <div class="color-panel-head">
-              <span class="color-panel-title">色号应用</span>
-              <span class="color-panel-hint">点选色卡、取色器取色，或直接输入色号</span>
+          <!-- 工作流专属面板：每个工作流只看自己的 -->
+          <div class="wf-panel" id="wfPanelCutout" hidden data-wf="cutout">
+            <div class="wf-panel-head">
+              <span class="wf-panel-title">📦 高清扣图选项</span>
+              <span class="wf-panel-hint">批量上传：自动逐张扣图，下载后再用 Excel 工具整理</span>
+            </div>
+            <div class="wf-panel-grid">
+              <label class="wf-row">
+                <span>背景</span>
+                <select id="cutoutBg">
+                  <option value="white">纯白</option>
+                  <option value="transparent">透明 PNG</option>
+                  <option value="studio">影棚渐变</option>
+                </select>
+              </label>
+              <label class="wf-row">
+                <span>边缘</span>
+                <select id="cutoutEdge">
+                  <option value="clean">干净硬边</option>
+                  <option value="soft">柔和阴影</option>
+                  <option value="auto">自动判断</option>
+                </select>
+              </label>
+              <label class="wf-row">
+                <span>批量</span>
+                <select id="cutoutBatch">
+                  <option value="1">每张单独</option>
+                  <option value="zip">打完包 zip</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="wf-panel" id="wfPanelVariants" hidden data-wf="variants">
+            <div class="wf-panel-head">
+              <span class="wf-panel-title">◇ 产品裂变设置</span>
+              <span class="wf-panel-hint">基于参考图，生成多个变体提案</span>
+            </div>
+            <div class="wf-panel-grid">
+              <label class="wf-row">
+                <span>裂变数量</span>
+                <select id="variantsCount">
+                  <option value="4">4 款</option>
+                  <option value="8" selected>8 款</option>
+                  <option value="12">12 款</option>
+                  <option value="20">20 款</option>
+                </select>
+              </label>
+              <label class="wf-row">
+                <span>变化方向</span>
+                <select id="variantsAxis">
+                  <option value="color">配色为主</option>
+                  <option value="pattern">图案为主</option>
+                  <option value="mixed" selected>混合方向</option>
+                </select>
+              </label>
+              <label class="wf-row">
+                <span>风格强度</span>
+                <select id="variantsStrength">
+                  <option value="subtle">保守相似</option>
+                  <option value="medium" selected>中等发散</option>
+                  <option value="wild">大胆发散</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="wf-panel" id="wfPanelApply" hidden data-wf="apply">
+            <div class="wf-panel-head">
+              <span class="wf-panel-title">◎ 图案 / 色号应用</span>
+              <span class="wf-panel-hint">点选色卡、取色器取色，或直接输入色号</span>
             </div>
             <div class="color-active-row">
               <div class="color-active-swatch" id="colorActiveSwatch" style="background:#ffffff"></div>
@@ -134,7 +200,7 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22l1-4 12-12 3 3-12 12-4 1z"/><path d="M14 7l3 3"/></svg>
                 取色器
               </button>
-              <button class="color-apply" id="colorApplyBtn" type="button" title="追加到提示词">应用到提示词</button>
+              <button class="color-apply" id="colorApplyBtn" type="button" title="应用到当前方案">应用到方案</button>
             </div>
             <div class="color-palette" id="colorPalette"></div>
             <div class="color-saved" id="colorSavedRow" hidden>
@@ -164,7 +230,7 @@
                   </button>
                   <button class="color-pick-action" id="colorPickNativeBtn" type="button">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
-                    系统取色器（屏幕）
+                    <span class="color-pick-native-label">系统取色器（屏幕）</span>
                   </button>
                 </div>
                 <div class="color-pick-stage" id="colorPickStage">
@@ -222,25 +288,30 @@
           </div>
         </div>
 
-        <!-- 参考图上传（图生图模式显示）-->
+        <!-- 参考图上传（图生图模式显示，支持多图） -->
         <div class="ref-upload-section" id="refSection" style="display:none">
+          <div class="ref-upload-header">
+            <span class="preset-label">参考图 <span class="ref-count" id="refCount">(0)</span></span>
+            <div class="ref-upload-actions">
+              <button class="ref-btn" id="addMoreRefBtn" type="button" hidden>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                添加更多
+              </button>
+              <button class="ref-btn danger" id="clearAllRefBtn" type="button" hidden>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                清空全部
+              </button>
+            </div>
+          </div>
           <div class="ref-upload-box" id="refUploadBox">
             <svg class="ref-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
             <div class="ref-upload-text">
-              <span class="ref-upload-title">上传参考图</span>
-              <span class="ref-upload-hint">支持 JPG、PNG、WebP</span>
+              <span class="ref-upload-title">上传参考图（可多选）</span>
+              <span class="ref-upload-hint">支持 JPG / PNG / WebP · 拖拽多张到此处</span>
             </div>
           </div>
-          <input type="file" id="refInput" accept="image/*" hidden />
-          <div class="ref-info" id="refInfo" style="display:none">
-            <img id="refPreview" class="ref-thumb" />
-            <div class="ref-info-text">
-              <span class="ref-name" id="refName"></span>
-            </div>
-            <button class="btn-clear" id="clearRefBtn">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
+          <input type="file" id="refInput" accept="image/*" multiple hidden />
+          <div class="ref-grid" id="refGrid" hidden></div>
           <div class="style-strength" id="styleStrength" style="display:none">
             <span class="preset-label">风格强度</span>
             <div class="strength-btns">

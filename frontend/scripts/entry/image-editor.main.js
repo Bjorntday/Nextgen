@@ -12,9 +12,13 @@
   let state = {
     generating: false,
     mode: 'txt2img',           // txt2img | img2img | inpaint
+    workflowMode: false,
     model: 'jimeng',
     style: '',
-    refImage: null,
+    // Reference images: an array of { name, dataUrl, mime }
+    // Backward-compat: refImage / refImageName are still read for legacy localStorage.
+    refImages: [],
+    refImage: null,            // legacy single-image field (deprecated, kept for restore compat)
     refImageName: '',
     strength: 'medium',
     brushSize: 'small',
@@ -69,7 +73,10 @@
         const tab = document.querySelector('.mode-tab[data-mode="' + t.mode + '"]');
         if (tab) tab.click();
       }
-      if (t.prompt) $('#promptInput').value = t.prompt;
+      if (t.prompt) {
+        $('#promptInput').value = t.prompt;
+        persistBasePrompt();
+      }
       localStorage.removeItem('nextgen_template');
     } catch(e) {}
   }
@@ -156,28 +163,60 @@
     };
   }
 
-  function getGenerationSourceImage() {
-    if (state.mode === 'img2img') return state.refImage || '';
+  function getGenerationSourceImages() {
+    if (state.mode === 'img2img') {
+      const items = (state.refImages || []).map((it) => it && it.dataUrl).filter(Boolean);
+      return items.length ? items : (state.refImage ? [state.refImage] : []);
+    }
     if (state.mode === 'inpaint') {
       const current = state.results[state.currentIndex] || state.results[0];
-      return current && current.url ? current.url : '';
+      return current && current.url ? [current.url] : [];
     }
-    return '';
+    return [];
   }
 
-  async function generateWithConfiguredApi({ provider, model, endpoint, key, prompt }) {
+  function getWorkflowHistoryLabel() {
+    if (!state.workflowMode) return '';
+    const key = getActiveWorkflowKey();
+    const cfg = TRADE_WORKFLOWS[key] || null;
+    return cfg ? cfg.title : '外贸商品工作流';
+  }
+
+  function getCurrentPromptLabel(fallback = '保存结果') {
+    if (state.workflowMode) return getWorkflowHistoryLabel() || fallback;
+    const promptInput = $('#promptInput');
+    return (promptInput && promptInput.value.trim()) || fallback;
+  }
+
+  function resolveActiveImageConfig() {
+    const activeProvider = state.model || 'jimeng';
+    let activeModel = 'jimeng-5.0';
+    let providerConfig = null;
+    try {
+      const saved = getSavedApiConfig();
+      providerConfig = getImageProviderConfig(saved, activeProvider);
+      if (providerConfig && providerConfig.model) activeModel = providerConfig.model;
+    } catch(e) {}
+    return { activeProvider, activeModel, providerConfig };
+  }
+
+  async function generateWithConfiguredApi({ provider, model, endpoint, key, prompt, mode, count, images, mask, ratio }) {
     const body = {
       endpoint,
       api_key: key,
       model,
       prompt,
-      mode: state.mode,
-      count: state.count,
-      ratio: state.ratio,
+      mode: mode || state.mode,
+      count: count || state.count,
+      ratio: ratio || state.ratio,
     };
-    const sourceImage = getGenerationSourceImage();
-    if (state.mode !== 'txt2img') body.image = sourceImage;
-    if (state.mode === 'inpaint' && state.maskData) body.mask = state.maskData;
+    const sourceImages = images || getGenerationSourceImages();
+    if (body.mode !== 'txt2img') {
+      body.images = sourceImages;
+      body.image = sourceImages[0] || '';
+    }
+    const maskData = mask || state.maskData;
+    if (body.mode === 'inpaint' && maskData) body.mask = maskData;
 
     const resp = await fetch('/api/image/openai-compatible/generate', {
       method: 'POST',
@@ -189,9 +228,9 @@
       const detail = data.recovery_suggestion ? '：' + data.recovery_suggestion : '';
       throw new Error((data.error || data.error_code || ('HTTP ' + resp.status)) + detail);
     }
-    const images = Array.isArray(data.images) ? data.images : [];
-    if (!images.length) throw new Error('接口没有返回图片结果');
-    return images.map((img, index) => ({ url: img.url || img.data_url, index, provider, model }));
+    const resultImages = Array.isArray(data.images) ? data.images : [];
+    if (!resultImages.length) throw new Error('接口没有返回图片结果');
+    return resultImages.map((img, index) => ({ url: img.url || img.data_url, index, provider, model }));
   }
 
   function loadModelChips() {
@@ -264,7 +303,11 @@
         $$('.mode-tab').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         state.mode = btn.dataset.mode;
+        state.workflowMode = false;
+        $$('.workflow-tab').forEach((b) => b.classList.remove('active'));
+        restoreBasePrompt();
         updateModeUI();
+        updateWorkflowPanelVisibility();
         updateCanvasStatus();
       });
     });
@@ -291,7 +334,7 @@
       refSection.style.display = 'none';
       inpaintSection.style.display = '';
       stylePresets.style.display = 'none';
-      countField.style.display = '';
+      countField.style.display = 'none';
       maskCanvas.style.display = '';
       initMaskCanvas();
     }
@@ -302,6 +345,7 @@
     }
 
     updateEmptyStateText();
+    updateGenHint();
     updateCanvasStatus();
   }
 
@@ -326,6 +370,62 @@
     },
   };
 
+  function getActiveWorkflowKey() {
+    return document.querySelector('.workflow-tab.active')?.dataset.workflow || 'cutout';
+  }
+
+  function getFieldValue(id, fallback = '') {
+    const el = document.getElementById(id);
+    return el ? (el.value || fallback) : fallback;
+  }
+
+  function labelFromSelect(id) {
+    const el = document.getElementById(id);
+    return el && el.selectedOptions && el.selectedOptions[0] ? el.selectedOptions[0].textContent.trim() : '';
+  }
+
+  function buildWorkflowPrompt() {
+    const key = getActiveWorkflowKey();
+    if (key === 'cutout') {
+      const bg = labelFromSelect('cutoutBg') || '纯白';
+      const edge = labelFromSelect('cutoutEdge') || '干净硬边';
+      const batch = labelFromSelect('cutoutBatch') || '每张单独';
+      return [
+        '将上传的商品图片处理成专业电商主图。',
+        `背景方案：${bg}；边缘处理：${edge}；批量策略：${batch}。`,
+        '要求保留商品主体真实结构、材质、颜色和细节，去除杂乱背景，边缘清晰自然，阴影真实，适合外贸报价单、商品资料和平台主图使用。',
+        '不要改变商品品类，不要生成多余元素，不要加入文字、水印或品牌标识。'
+      ].join('');
+    }
+    if (key === 'variants') {
+      const count = getFieldValue('variantsCount', '8');
+      const axis = labelFromSelect('variantsAxis') || '混合方向';
+      const strength = labelFromSelect('variantsStrength') || '中等发散';
+      return [
+        `基于上传的参考商品生成 ${count} 个外贸新品裂变方案。`,
+        `变化方向：${axis}；风格强度：${strength}。`,
+        '保留原商品的核心结构、功能卖点、材质逻辑和商业可生产感，在图案、配色、主题、局部装饰或系列化风格上做差异化延展。',
+        '输出应像一组可给客户提案的新款产品效果图，风格统一但每款有清晰区别；不要改变商品大类，不要生成无关场景或文字。'
+      ].join('');
+    }
+    const hex = (document.getElementById('colorActiveHex')?.value || colorPanelState.active?.hex || '').trim();
+    const colorName = (document.getElementById('colorActiveName')?.value || colorPanelState.active?.name || '').trim();
+    const colorText = hex ? `${colorName || '指定色号'} ${hex.toUpperCase()}` : '当前选定图案和色号';
+    return [
+      `将${colorText}应用到上传的参考商品上。`,
+      '保持商品形状、材质、比例、真实光影和原始构图不变，只替换或应用指定图案/颜色区域。',
+      '颜色要准确，纹理比例与透视方向自然，贴合产品表面，不拉伸、不扭曲；不要改变整体光照方向、场景结构、色调风格，不要引入新元素。'
+    ].join('');
+  }
+
+  function syncWorkflowPrompt() {
+    const promptInput = $('#promptInput');
+    if (!promptInput) return;
+    const prompt = buildWorkflowPrompt();
+    promptInput.value = prompt;
+    try { localStorage.setItem(WORKFLOW_PROMPT_LS_KEY, prompt); } catch (_e) {}
+  }
+
   function initTradeWorkflow() {
     const root = $('#tradeWorkflow');
     if (!root) return;
@@ -334,23 +434,27 @@
 
     function activate(key, applyPrompt = false) {
       const cfg = TRADE_WORKFLOWS[key] || TRADE_WORKFLOWS.cutout;
+      state.workflowMode = true;
       $$('.workflow-tab').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.workflow === key);
       });
       if (titleNode) titleNode.textContent = cfg.title;
       if (descNode) descNode.textContent = cfg.desc;
       try { localStorage.setItem(WORKFLOW_LS_KEY, key); } catch (_e) {}
-      try { updateColorPanelVisibility(); } catch (_e) {}
+      try { updateWorkflowPanelVisibility(); } catch (_e) {}
+      syncWorkflowPrompt();
       if (!applyPrompt) return;
 
       const modeTab = document.querySelector('.mode-tab[data-mode="' + cfg.mode + '"]');
       if (modeTab) modeTab.click();
-      const promptInput = $('#promptInput');
-      if (promptInput) {
-        promptInput.value = cfg.prompt;
-        promptInput.focus();
-        try { localStorage.setItem(PROMPT_LS_KEY, cfg.prompt); } catch (_e) {}
-      }
+      state.workflowMode = true;
+      $$('.workflow-tab').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.workflow === key);
+      });
+      updateWorkflowPanelVisibility();
+      syncWorkflowPrompt();
+      updateGenHint();
+      updateCanvasStatus();
     }
 
     $$('.workflow-tab').forEach((btn) => {
@@ -368,17 +472,35 @@
       const mode = key === 'cutout' ? 'inpaint' : 'img2img';
       const modeTab = document.querySelector('.mode-tab[data-mode="' + mode + '"]');
       if (modeTab) modeTab.click();
+      state.workflowMode = true;
+      $$('.workflow-tab').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.workflow === key);
+      });
+      updateWorkflowPanelVisibility();
+      syncWorkflowPrompt();
+      updateGenHint();
+      updateCanvasStatus();
       if (mode === 'img2img') $('#refInput')?.click();
       if (mode === 'inpaint') $('#imageInput')?.click();
     });
 
-    // Restore last selected workflow tab (without re-applying its prompt).
+    root.querySelectorAll('.wf-panel select, .wf-panel input').forEach((control) => {
+      control.addEventListener('change', syncWorkflowPrompt);
+      control.addEventListener('input', syncWorkflowPrompt);
+    });
+
+    // Restore workflow copy, but do not enter workflow mode on page load.
     try {
       const lastKey = localStorage.getItem(WORKFLOW_LS_KEY);
       if (lastKey && TRADE_WORKFLOWS[lastKey]) {
-        activate(lastKey, false);
+        const cfg = TRADE_WORKFLOWS[lastKey];
+        if (titleNode) titleNode.textContent = cfg.title;
+        if (descNode) descNode.textContent = cfg.desc;
       }
     } catch (_e) {}
+    state.workflowMode = false;
+    $$('.workflow-tab').forEach((btn) => btn.classList.remove('active'));
+    updateWorkflowPanelVisibility();
   }
 
   // ========== 色号应用面板 ==========
@@ -446,6 +568,31 @@
     } catch (_e) {}
   }
 
+  function normalizeHexColor(value) {
+    let hex = String(value || '').trim();
+    if (!hex) return '';
+    if (!hex.startsWith('#')) hex = '#' + hex;
+    return /^#([0-9a-fA-F]{6})$/.test(hex) ? hex.toUpperCase() : '';
+  }
+
+  function syncActiveColorToWorkflow() {
+    if (state.workflowMode && getActiveWorkflowKey() === 'apply') {
+      syncWorkflowPrompt();
+    }
+  }
+
+  function setActiveColor({ name = '', hex }, { toastMessage = '' } = {}) {
+    const normalized = normalizeHexColor(hex);
+    if (!normalized) return false;
+    colorPanelState.active = { name, hex: normalized };
+    renderColorActive();
+    renderColorPalette();
+    saveColorPanelState();
+    syncActiveColorToWorkflow();
+    if (toastMessage) toast(toastMessage);
+    return true;
+  }
+
   function renderColorPalette() {
     const palette = $('#colorPalette');
     if (!palette) return;
@@ -465,12 +612,7 @@
       if (colorPanelState.active.hex?.toLowerCase() === c.hex.toLowerCase()) {
         btn.classList.add('is-selected');
       }
-      btn.addEventListener('click', () => {
-        colorPanelState.active = { name: c.name, hex: c.hex };
-        renderColorActive();
-        renderColorPalette();
-        saveColorPanelState();
-      });
+      btn.addEventListener('click', () => setActiveColor({ name: c.name, hex: c.hex }));
       palette.appendChild(btn);
     });
   }
@@ -513,35 +655,36 @@
       });
       btn.appendChild(rm);
       btn.addEventListener('click', () => {
-        colorPanelState.active = { name: c.name, hex: c.hex };
-        renderColorActive();
-        renderColorPalette();
-        saveColorPanelState();
+        setActiveColor({ name: c.name, hex: c.hex });
       });
       list.appendChild(btn);
     });
   }
 
   function updateColorPanelVisibility() {
-    const panel = $('#colorPanel');
+    const panel = $('#colorPanel') || $('#wfPanelApply');
     if (!panel) return;
     const activeTab = document.querySelector('.workflow-tab.active');
-    const isApply = activeTab && activeTab.dataset.workflow === 'apply';
+    const isApply = state.workflowMode && activeTab && activeTab.dataset.workflow === 'apply';
     panel.hidden = !isApply;
   }
 
+  function updateWorkflowPanelVisibility() {
+    const active = document.querySelector('.workflow-tab.active')?.dataset.workflow || 'cutout';
+    $$('.wf-panel').forEach((panel) => {
+      panel.hidden = !state.workflowMode || panel.dataset.wf !== active;
+    });
+    const promptSection = document.querySelector('.prompt-section');
+    if (promptSection) promptSection.hidden = !!state.workflowMode;
+    updateColorPanelVisibility();
+  }
+
   function appendColorToPrompt() {
-    const promptInput = $('#promptInput');
-    if (!promptInput) return;
     const c = colorPanelState.active;
     if (!c || !c.hex) return;
-    const tag = `${c.name || '色号'} ${c.hex.toUpperCase()}`;
-    // Don't append the same color twice in a row.
-    const cur = promptInput.value.trim();
-    if (cur && cur.toLowerCase().endsWith(c.hex.toLowerCase())) return;
-    promptInput.value = (cur ? cur + '，' : '') + tag;
-    try { localStorage.setItem(PROMPT_LS_KEY, promptInput.value); } catch (_e) {}
-    promptInput.focus();
+    saveColorPanelState();
+    syncWorkflowPrompt();
+    toast('已应用到当前方案');
   }
 
   function saveActiveColor() {
@@ -580,14 +723,22 @@
     // Show "从已上传参考图取色" only when ref image exists.
     const fromRefBtn = $('#colorPickFromRefBtn');
     if (fromRefBtn) fromRefBtn.hidden = !state.refImage;
-    // Disable system picker if EyeDropper API is unavailable.
+    // Visually de-emphasize system picker if EyeDropper API is unavailable,
+    // but DO NOT disable the button — clicking it must still give the user a
+    // clear message and offer the alternative flows.
     const sysBtn = $('#colorPickNativeBtn');
     if (sysBtn) {
       const supported = typeof window !== 'undefined' && 'EyeDropper' in window;
-      sysBtn.disabled = !supported;
-      sysBtn.title = supported ? '从屏幕任意位置取色' : '当前浏览器不支持系统取色器（仅 Chromium 内核支持）';
-      sysBtn.style.opacity = supported ? '1' : '0.45';
-      sysBtn.style.cursor = supported ? 'pointer' : 'not-allowed';
+      sysBtn.dataset.supported = supported ? '1' : '0';
+      sysBtn.title = supported
+        ? '从屏幕任意位置取色'
+        : '当前浏览器不支持系统取色器，点击查看替代方案';
+      sysBtn.classList.toggle('is-unsupported', !supported);
+      // Update the visible label so the user knows what will happen.
+      const label = sysBtn.querySelector('.color-pick-native-label');
+      if (label) {
+        label.textContent = supported ? '系统取色器（屏幕）' : '系统取色器（不支持）';
+      }
     }
     // Reset stage.
     const stage = $('#colorPickStage');
@@ -710,30 +861,54 @@
   function confirmPickedColor() {
     const hex = pickerModalState.pendingHex;
     if (!hex) return;
-    colorPanelState.active = { name: '取色', hex };
-    renderColorActive();
-    renderColorPalette();
-    saveColorPanelState();
+    setActiveColor({ name: '取色', hex }, { toastMessage: '已取色并应用到当前方案' });
     closeColorPickModal();
   }
 
   async function startNativeEyeDropper() {
-    if (typeof window === 'undefined' || !('EyeDropper' in window)) return;
+    if (typeof window === 'undefined' || !('EyeDropper' in window)) {
+      // Fallback: explain and offer alternative flows.
+      showColorPickerToast(
+        '当前浏览器不支持系统取色器（仅 Chromium 95+ 桌面版支持）。请改用：\n' +
+        '• 「上传图片取色」上传任意图片后点击取色\n' +
+        '• 「从已上传参考图取色」从已有图取色\n' +
+        '• 直接在 HEX / 色号输入框手动填写',
+        'warn'
+      );
+      return;
+    }
     try {
       const dropper = new window.EyeDropper();
+      // The browser shows its own full-screen magnifier; once the user clicks
+      // anywhere on the page (including outside this app), it returns the
+      // sampled sRGB hex of the pixel under the cursor.
       const result = await dropper.open();
       const hex = (result?.sRGBHex || '').toUpperCase();
       if (hex) {
-        colorPanelState.active = { name: '屏幕取色', hex };
-        renderColorActive();
-        renderColorPalette();
-        saveColorPanelState();
+        setActiveColor({ name: '屏幕取色', hex }, { toastMessage: '已取色并应用到当前方案' });
         closeColorPickModal();
       }
     } catch (err) {
-      // User cancelled — keep modal open.
-      console.debug('EyeDropper cancelled', err);
+      // User cancelled (pressed Esc) — keep modal open, no noisy error.
+      // We only log to console; a modal toast is unnecessary because the user
+      // already saw the OS-level "cancelled" indicator.
+      if (err && err.name !== 'AbortError') {
+        console.warn('[eyedropper] failed:', err);
+      }
     }
+  }
+
+  function showColorPickerToast(message, level = 'info') {
+    const old = document.getElementById('colorPickerToast');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.id = 'colorPickerToast';
+    el.className = 'color-picker-toast color-picker-toast--' + level;
+    el.textContent = message;
+    el.addEventListener('click', () => el.remove());
+    document.body.appendChild(el);
+    setTimeout(() => el.classList.add('is-out'), 6000);
+    setTimeout(() => el.remove(), 6500);
   }
 
   function handleColorPickFile(file) {
@@ -750,7 +925,7 @@
   }
 
   function initColorPanel() {
-    const panel = $('#colorPanel');
+    const panel = $('#colorPanel') || $('#wfPanelApply');
     if (!panel) return;
     loadColorPanelState();
     renderColorPalette();
@@ -761,13 +936,14 @@
     // Hex input — live update swatch
     const hexInput = $('#colorActiveHex');
     hexInput?.addEventListener('input', () => {
-      let v = hexInput.value.trim();
-      if (!v.startsWith('#')) v = '#' + v;
-      if (/^#([0-9a-fA-F]{6})$/.test(v)) {
+      const v = normalizeHexColor(hexInput.value);
+      if (v) {
         colorPanelState.active.hex = v;
+        colorPanelState.active.name = $('#colorActiveName')?.value || colorPanelState.active.name || '';
         renderColorActive();
         renderColorPalette();
         saveColorPanelState();
+        syncActiveColorToWorkflow();
       }
     });
     // Name input
@@ -775,6 +951,7 @@
     nameInput?.addEventListener('input', () => {
       colorPanelState.active.name = nameInput.value;
       saveColorPanelState();
+      syncActiveColorToWorkflow();
     });
     // Apply to prompt
     $('#colorApplyBtn')?.addEventListener('click', appendColorToPrompt);
@@ -804,9 +981,7 @@
     $('#colorPickFromRefBtn')?.addEventListener('click', () => {
       if (state.refImage) loadImageIntoStage(state.refImage);
     });
-    $('#colorPickNativeBtn')?.addEventListener('click', () => {
-      if (!$('#colorPickNativeBtn').disabled) startNativeEyeDropper();
-    });
+    $('#colorPickNativeBtn')?.addEventListener('click', startNativeEyeDropper);
     $('#colorPickCancelBtn')?.addEventListener('click', closeColorPickModal);
     $('#colorPickConfirmBtn')?.addEventListener('click', confirmPickedColor);
 
@@ -873,22 +1048,39 @@
         if (styleToPrompt[state.style]) {
           const promptInput = $('#promptInput');
           promptInput.value = styleToPrompt[state.style];
+          if (!state.workflowMode) persistBasePrompt();
         }
       });
     });
   }
 
   // ========== 提示词 ==========
+  function restoreBasePrompt() {
+    const promptInput = $('#promptInput');
+    if (!promptInput) return;
+    try {
+      promptInput.value = localStorage.getItem(BASE_PROMPT_LS_KEY) || '';
+    } catch (_e) {
+      promptInput.value = '';
+    }
+  }
+
+  function persistBasePrompt() {
+    const promptInput = $('#promptInput');
+    if (!promptInput) return;
+    try {
+      if (promptInput.value) localStorage.setItem(BASE_PROMPT_LS_KEY, promptInput.value);
+      else localStorage.removeItem(BASE_PROMPT_LS_KEY);
+    } catch (_e) {}
+  }
+
   function initPromptInput() {
     const promptInput = $('#promptInput');
-    // Restore last prompt so page navigation/refresh doesn't wipe the user's text.
-    try {
-      const saved = localStorage.getItem(PROMPT_LS_KEY);
-      if (saved !== null && promptInput) promptInput.value = saved;
-    } catch (_e) {}
+    // Restore last base prompt so page navigation/refresh doesn't wipe the user's text.
+    restoreBasePrompt();
     if (promptInput) {
       promptInput.addEventListener('input', () => {
-        try { localStorage.setItem(PROMPT_LS_KEY, promptInput.value); } catch (_e) {}
+        if (!state.workflowMode) persistBasePrompt();
       });
     }
     $('#randomBtn').addEventListener('click', () => {
@@ -901,84 +1093,201 @@
       ];
       const v = prompts[Math.floor(Math.random() * prompts.length)];
       promptInput.value = v;
-      try { localStorage.setItem(PROMPT_LS_KEY, v); } catch (_e) {}
+      persistBasePrompt();
     });
     $('#clearPromptBtn').addEventListener('click', () => {
       promptInput.value = '';
       promptInput.focus();
-      try { localStorage.removeItem(PROMPT_LS_KEY); } catch (_e) {}
+      persistBasePrompt();
     });
   }
 
-  // ========== 参考图上传 ==========
-  const REF_IMAGE_LS_KEY = 'nextgen.imageEditor.refImage';
-  const REF_IMAGE_NAME_LS_KEY = 'nextgen.imageEditor.refImageName';
-  const PROMPT_LS_KEY = 'nextgen.imageEditor.prompt';
+  // ========== 参考图上传（支持多图） ==========
+  const REF_IMAGES_LS_KEY = 'nextgen.imageEditor.refImages';
+  const REF_IMAGE_LS_KEY = 'nextgen.imageEditor.refImage';           // legacy
+  const REF_IMAGE_NAME_LS_KEY = 'nextgen.imageEditor.refImageName'; // legacy
+  const BASE_PROMPT_LS_KEY = 'nextgen.imageEditor.basePrompt';
+  const WORKFLOW_PROMPT_LS_KEY = 'nextgen.imageEditor.workflowPrompt';
   const WORKFLOW_LS_KEY = 'nextgen.imageEditor.workflow';
+  const MAX_REF_IMAGES = 8;
 
-  function persistRefImage() {
+  function persistRefImages() {
     try {
-      if (state.refImage) {
-        localStorage.setItem(REF_IMAGE_LS_KEY, state.refImage);
-        if (state.refImageName) localStorage.setItem(REF_IMAGE_NAME_LS_KEY, state.refImageName);
+      // Try persisting the full list; if too large, fall back to just the first image.
+      if (state.refImages && state.refImages.length) {
+        try {
+          localStorage.setItem(REF_IMAGES_LS_KEY, JSON.stringify(state.refImages));
+          localStorage.removeItem(REF_IMAGE_LS_KEY);
+          localStorage.removeItem(REF_IMAGE_NAME_LS_KEY);
+        } catch (quotaErr) {
+          localStorage.setItem(REF_IMAGE_LS_KEY, state.refImages[0].dataUrl);
+          localStorage.setItem(REF_IMAGE_NAME_LS_KEY, state.refImages[0].name);
+          localStorage.removeItem(REF_IMAGES_LS_KEY);
+        }
       } else {
+        localStorage.removeItem(REF_IMAGES_LS_KEY);
         localStorage.removeItem(REF_IMAGE_LS_KEY);
         localStorage.removeItem(REF_IMAGE_NAME_LS_KEY);
       }
-    } catch (e) { /* ignore quota errors */ }
+    } catch (_e) { /* ignore */ }
   }
 
-  function restoreRefImage() {
+  function restoreRefImages() {
     try {
-      const dataUrl = localStorage.getItem(REF_IMAGE_LS_KEY);
-      if (!dataUrl) return;
-      const name = localStorage.getItem(REF_IMAGE_NAME_LS_KEY) || '';
-      state.refImage = dataUrl;
-      state.refImageName = name;
-      const preview = $('#refPreview');
-      const refName = $('#refName');
-      const refInfo = $('#refInfo');
-      const boxEl = $('#refUploadBox');
-      const styleStrength = $('#styleStrength');
-      if (preview) preview.src = dataUrl;
-      if (refName) refName.textContent = name;
-      if (refInfo) refInfo.style.display = '';
-      if (boxEl) boxEl.style.display = 'none';
-      if (styleStrength) styleStrength.style.display = '';
-    } catch (e) { /* ignore */ }
+      let restored = null;
+      const rawMulti = localStorage.getItem(REF_IMAGES_LS_KEY);
+      if (rawMulti) {
+        const parsed = JSON.parse(rawMulti);
+        if (Array.isArray(parsed) && parsed.length) {
+          restored = parsed
+            .filter((r) => r && r.dataUrl)
+            .slice(0, MAX_REF_IMAGES)
+            .map((r) => ({ name: r.name || 'image', dataUrl: r.dataUrl, mime: r.mime || guessMimeFromDataUrl(r.dataUrl) }));
+        }
+      } else {
+        const single = localStorage.getItem(REF_IMAGE_LS_KEY);
+        if (single) {
+          restored = [{
+            name: localStorage.getItem(REF_IMAGE_NAME_LS_KEY) || 'image',
+            dataUrl: single,
+            mime: guessMimeFromDataUrl(single),
+          }];
+        }
+      }
+      if (restored && restored.length) {
+        state.refImages = restored;
+        // Backward-compat: also keep the first image in the old fields.
+        state.refImage = restored[0].dataUrl;
+        state.refImageName = restored[0].name;
+      }
+    } catch (_e) { /* ignore */ }
+  }
+
+  function guessMimeFromDataUrl(dataUrl) {
+    const m = /^data:([^;,]+)/.exec(String(dataUrl || ''));
+    return m ? m[1] : 'image/png';
+  }
+
+  function renderRefGrid() {
+    const grid = $('#refGrid');
+    const count = $('#refCount');
+    const box = $('#refUploadBox');
+    const addMore = $('#addMoreRefBtn');
+    const clearAll = $('#clearAllRefBtn');
+    const styleStrength = $('#styleStrength');
+    if (!grid) return;
+    const items = state.refImages || [];
+    if (count) count.textContent = `(${items.length}/${MAX_REF_IMAGES})`;
+    if (items.length === 0) {
+      grid.hidden = true;
+      grid.innerHTML = '';
+      if (box) box.style.display = '';
+      if (addMore) addMore.hidden = true;
+      if (clearAll) clearAll.hidden = true;
+      if (styleStrength) styleStrength.style.display = 'none';
+      return;
+    }
+    grid.hidden = false;
+    if (box) box.style.display = 'none';
+    if (addMore) addMore.hidden = items.length >= MAX_REF_IMAGES;
+    if (clearAll) clearAll.hidden = false;
+    if (styleStrength) styleStrength.style.display = '';
+    grid.innerHTML = items.map((it, idx) => (
+      `<div class="ref-card" data-ref-index="${idx}">`
+      + `<span class="ref-card-index">#${idx + 1}</span>`
+      + `<button class="ref-card-remove" type="button" aria-label="删除" data-remove-index="${idx}">×</button>`
+      + `<img src="${it.dataUrl}" alt="${escapeAttr(it.name || '')}" />`
+      + `<div class="ref-card-name">${escapeAttr(it.name || '')}</div>`
+      + `</div>`
+    )).join('');
+  }
+
+  function escapeAttr(s) {
+    return String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function appendRefFiles(files) {
+    if (!files || !files.length) return;
+    const room = MAX_REF_IMAGES - state.refImages.length;
+    const list = Array.from(files).slice(0, Math.max(0, room));
+    let pending = list.length;
+    if (!pending) return;
+    list.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        state.refImages.push({
+          name: file.name,
+          dataUrl: ev.target.result,
+          mime: file.type || guessMimeFromDataUrl(ev.target.result),
+        });
+        pending -= 1;
+        if (pending === 0) {
+          // Keep legacy first-image field in sync.
+          state.refImage = state.refImages[0]?.dataUrl || null;
+          state.refImageName = state.refImages[0]?.name || '';
+          renderRefGrid();
+          persistRefImages();
+        }
+      };
+      reader.onerror = () => { pending -= 1; };
+      reader.readAsDataURL(file);
+    });
   }
 
   function initRefUpload() {
     const box = $('#refUploadBox');
     const input = $('#refInput');
+    const addMore = $('#addMoreRefBtn');
+    const clearAll = $('#clearAllRefBtn');
+    if (!box || !input) return;
+
     box.addEventListener('click', () => input.click());
+    addMore?.addEventListener('click', () => input.click());
+
     input.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        state.refImage = ev.target.result;
-        state.refImageName = file.name;
-        $('#refPreview').src = ev.target.result;
-        $('#refName').textContent = file.name;
-        $('#refInfo').style.display = '';
-        box.style.display = 'none';
-        $('#styleStrength').style.display = '';
-        persistRefImage();
-      };
-      reader.readAsDataURL(file);
+      appendRefFiles(e.target.files);
+      // Reset so the same file can be re-selected.
+      e.target.value = '';
     });
-    $('#clearRefBtn').addEventListener('click', () => {
+
+    // Drag-and-drop (visual nicety; multi-file is already supported by appendRefFiles).
+    ['dragenter', 'dragover'].forEach((evt) => {
+      box.addEventListener(evt, (e) => { e.preventDefault(); box.style.borderColor = 'var(--primary)'; });
+    });
+    ['dragleave', 'drop'].forEach((evt) => {
+      box.addEventListener(evt, (e) => { e.preventDefault(); box.style.borderColor = ''; });
+    });
+    box.addEventListener('drop', (e) => {
+      const files = e.dataTransfer?.files;
+      if (files?.length) appendRefFiles(files);
+    });
+
+    // Remove a single image
+    const grid = $('#refGrid');
+    grid?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove-index]');
+      if (!btn) return;
+      const idx = Number(btn.dataset.removeIndex);
+      if (Number.isNaN(idx)) return;
+      state.refImages.splice(idx, 1);
+      state.refImage = state.refImages[0]?.dataUrl || null;
+      state.refImageName = state.refImages[0]?.name || '';
+      renderRefGrid();
+      persistRefImages();
+    });
+
+    // Clear all
+    clearAll?.addEventListener('click', () => {
+      state.refImages = [];
       state.refImage = null;
       state.refImageName = '';
-      input.value = '';
-      $('#refInfo').style.display = 'none';
-      box.style.display = '';
-      $('#styleStrength').style.display = 'none';
-      persistRefImage();
+      renderRefGrid();
+      persistRefImages();
     });
-    // Restore last uploaded ref image so page navigation / refresh doesn't lose it.
-    restoreRefImage();
+
+    // Restore from localStorage.
+    restoreRefImages();
+    renderRefGrid();
   }
 
   // ========== 风格强度 ==========
@@ -1018,11 +1327,15 @@
         };
         if (actionToPrompt[action]) {
           $('#promptInput').value = actionToPrompt[action];
+          state.workflowMode = false;
+          $$('.workflow-tab').forEach((b) => b.classList.remove('active'));
+          persistBasePrompt();
         }
         $$('.mode-tab').forEach((b) => b.classList.remove('active'));
         $$('.mode-tab[data-mode="inpaint"]')[0].classList.add('active');
         state.mode = 'inpaint';
         updateModeUI();
+        updateWorkflowPanelVisibility();
       });
     });
   }
@@ -1056,7 +1369,12 @@
 
   function updateGenHint() {
     const hint = $('#genHint');
-    if (hint) hint.textContent = state.count + ' 张图';
+    if (!hint) return;
+    if (state.mode === 'inpaint') {
+      hint.textContent = state.workflowMode ? '开始处理' : '蒙版重绘';
+      return;
+    }
+    hint.textContent = state.count + ' 张图';
   }
 
   function updateCanvasStatus() {
@@ -1107,12 +1425,13 @@
 
   async function handleGenerate() {
     if (state.generating) return;
-    const prompt = $('#promptInput').value.trim();
+    if (state.workflowMode) syncWorkflowPrompt();
+    const prompt = state.workflowMode ? buildWorkflowPrompt().trim() : $('#promptInput').value.trim();
     if (!prompt && state.mode !== 'inpaint') {
       alert('请输入图片描述');
       return;
     }
-    if (state.mode === 'img2img' && !state.refImage) {
+    if (state.mode === 'img2img' && !(state.refImages && state.refImages.length)) {
       alert('请先上传参考图');
       return;
     }
@@ -1122,14 +1441,7 @@
     }
 
     // Read API config from settings, resolve provider + model from active chip
-    let activeProvider = state.model || 'jimeng';
-    let activeModel = 'jimeng-5.0';
-    let providerConfig = null;
-    try {
-      const saved = getSavedApiConfig();
-      providerConfig = getImageProviderConfig(saved, activeProvider);
-      if (providerConfig && providerConfig.model) activeModel = providerConfig.model;
-    } catch(e) {}
+    const { activeProvider, activeModel, providerConfig } = resolveActiveImageConfig();
     // Update state to reflect resolved provider
     state.model = activeProvider;
 
@@ -1152,11 +1464,17 @@
     $('#genBtn').classList.add('generating');
 
     // 显示加载动画
+    state.results = [];
+    state.currentIndex = -1;
     $('#emptyState').style.display = 'none';
     $('#previewWrap').style.display = 'none';
     $('#resultGrid').style.display = 'none';
+    $('#resultGrid').innerHTML = '';
     $('#genLoading').style.display = '';
     $('#progressBar').style.width = '10%';
+    const targetCount = state.mode === 'inpaint' ? 1 : Math.max(1, state.count || 1);
+    const historyPrompt = state.workflowMode ? getWorkflowHistoryLabel() : prompt;
+    const loadingText = $('#loadingText');
 
     // 模拟进度
     let progress = 10;
@@ -1166,60 +1484,49 @@
     }, 800);
 
     try {
-      const results = await generateWithConfiguredApi({
-        provider: activeProvider,
-        model: activeModel,
-        endpoint: providerConfig.api_base || providerConfig.endpoint,
-        key: providerConfig.key,
-        prompt,
-      });
+      for (let i = 0; i < targetCount; i += 1) {
+        if (loadingText) loadingText.textContent = targetCount > 1 ? `AI 创作中…第 ${i + 1}/${targetCount} 张` : 'AI 创作中…';
+        const results = await generateWithConfiguredApi({
+          provider: activeProvider,
+          model: activeModel,
+          endpoint: providerConfig.api_base || providerConfig.endpoint,
+          key: providerConfig.key,
+          prompt,
+          count: 1,
+        });
+
+        results.forEach((r) => { r.prompt = historyPrompt; });
+        $('#genLoading').style.display = 'none';
+        renderResults(state.results.concat(results));
+        saveToHistory(results, historyPrompt);
+        $('#progressBar').style.width = Math.round(((i + 1) / targetCount) * 100) + '%';
+      }
 
       clearInterval(progressTimer);
       $('#progressBar').style.width = '100%';
-
       $('#genLoading').style.display = 'none';
-      renderResults(results);
-      saveToHistory(results, prompt);
     } catch (err) {
       clearInterval(progressTimer);
-      $('#genLoading').style.display = 'none';
+      restoreGenerationSurface();
+      toast('生成失败：' + err.message, 6000);
       alert('生成失败：' + err.message);
     } finally {
       state.generating = false;
       $('#genBtn').disabled = false;
       $('#genBtn').classList.remove('generating');
+      if (loadingText) loadingText.textContent = 'AI 创作中…';
     }
   }
 
-  // 模拟生成（实际项目删除此函数）
-  function mockGenerate() {
-    return new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-
-  // 模拟结果（实际项目替换为真实图片）
-  function generateMockResults() {
-    const results = [];
-    for (let i = 0; i < state.count; i++) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = state.ratio === '9:16' ? 896 : state.ratio === '16:9' ? 288 : 512;
-      const ctx = canvas.getContext('2d');
-      const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      grd.addColorStop(0, '#2A2A30');
-      grd.addColorStop(1, '#1F1F24');
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(255,255,255,0.02)';
-      for (let j = 0; j < 300; j++) {
-        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 1);
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.12)';
-      ctx.font = '14px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('AI 生成结果 ' + (i + 1), canvas.width / 2, canvas.height / 2);
-      results.push({ url: canvas.toDataURL('image/png'), index: i });
+  function restoreGenerationSurface() {
+    $('#genLoading').style.display = 'none';
+    if (state.results.length) {
+      renderResults(state.results);
+      return;
     }
-    return results;
+    $('#resultGrid').style.display = 'none';
+    $('#previewWrap').style.display = 'none';
+    $('#emptyState').style.display = '';
   }
 
   // ========== 结果渲染 ==========
@@ -1236,7 +1543,7 @@
       const item = document.createElement('div');
       item.className = 'result-item';
       item.innerHTML = `
-        <img src="${r.url}" alt="结果${i + 1}" />
+        <img src="${escapeAttr(r.url)}" alt="结果${i + 1}" />
         <div class="result-actions">
           <button data-action="upscale">U${i + 1}</button>
           <button data-action="variant">V${i + 1}</button>
@@ -1251,14 +1558,14 @@
         showModal(r.url);
       });
       item.querySelector('[data-action="variant"]').addEventListener('click', () => {
-        makeVariant(r, i);
+        makeVariant(r, i, item.querySelector('[data-action="variant"]'));
       });
       item.querySelector('[data-action="save"]').addEventListener('click', () => {
-        saveToHistory([r], $('#promptInput').value.trim() || '保存结果');
+        saveToHistory([r], r.prompt || getCurrentPromptLabel('保存结果'));
         toast('已保存到素材库');
       });
       item.querySelector('[data-action="download"]').addEventListener('click', () => {
-        downloadImage(r.url, `nextgen-${Date.now()}.jpg`);
+        downloadImage(r.url, imageFilename('nextgen', r.url));
       });
       grid.appendChild(item);
     });
@@ -1274,17 +1581,62 @@
     updateEmptyStateText();
   }
 
-  function makeVariant(result, index) {
-    const variant = {
-      url: generateMockResults()[0].url,
-      index: state.results.length,
-      parent: index,
-    };
-    state.results.splice(index + 1, 0, variant);
-    renderResults(state.results);
+  async function makeVariant(result, index, button) {
+    if (!result || !result.url) return;
+    const { activeProvider, activeModel, providerConfig } = resolveActiveImageConfig();
+    if (!providerConfig || !providerConfig.key) {
+      alert('当前图片模型未配置 API Key，请先到设置页保存 Key 后再生成变体。');
+      updateModelStatus();
+      return;
+    }
+    if (!providerConfig.endpoint && !providerConfig.api_base) {
+      alert('当前图片模型缺少 API 端点，无法生成变体。');
+      return;
+    }
+    if (!activeModel) {
+      alert('当前图片模型缺少模型名，无法生成变体。');
+      return;
+    }
+    const originalText = button ? button.textContent : '';
+    if (button) {
+      button.disabled = true;
+      button.textContent = '生成中';
+    }
+    try {
+      const basePrompt = result.prompt || getCurrentPromptLabel('基于当前图片生成一个相近但有差异的电商变体');
+      const variantPrompt = `${basePrompt}。基于这张结果图生成 1 张同系列变体，保持商品主体和商业质感，调整局部设计、配色或陈列细节，不要加入文字、水印或无关元素。`;
+      const generated = await generateWithConfiguredApi({
+        provider: activeProvider,
+        model: activeModel,
+        endpoint: providerConfig.api_base || providerConfig.endpoint,
+        key: providerConfig.key,
+        prompt: variantPrompt,
+        mode: 'img2img',
+        count: 1,
+        images: [result.url],
+      });
+      const variant = {
+        ...generated[0],
+        index: state.results.length,
+        parent: index,
+        prompt: `变体：${basePrompt}`,
+      };
+      state.results.splice(index + 1, 0, variant);
+      renderResults(state.results);
+      saveToHistory([variant], variant.prompt);
+      toast('变体已生成');
+    } catch (err) {
+      toast('变体生成失败：' + err.message, 6000);
+      alert('变体生成失败：' + err.message);
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
   }
 
-  function toast(message) {
+  function toast(message, duration = 1600) {
     let node = document.querySelector('.editor-toast');
     if (!node) {
       node = document.createElement('div');
@@ -1294,7 +1646,21 @@
     node.textContent = message;
     node.classList.add('show');
     clearTimeout(node._timer);
-    node._timer = setTimeout(() => node.classList.remove('show'), 1600);
+    node._timer = setTimeout(() => node.classList.remove('show'), duration);
+  }
+
+  function imageFilename(prefix, url) {
+    let ext = 'png';
+    const mime = /^data:image\/([^;,]+)/i.exec(String(url || ''));
+    if (mime && mime[1]) {
+      ext = mime[1].toLowerCase() === 'jpeg' ? 'jpg' : mime[1].toLowerCase();
+    } else {
+      const pathExt = /\.([a-z0-9]+)(?:[?#].*)?$/i.exec(String(url || ''));
+      if (pathExt && ['png', 'jpg', 'jpeg', 'webp'].includes(pathExt[1].toLowerCase())) {
+        ext = pathExt[1].toLowerCase() === 'jpeg' ? 'jpg' : pathExt[1].toLowerCase();
+      }
+    }
+    return `${prefix}-${Date.now()}.${ext}`;
   }
 
   function downloadImage(url, filename) {
@@ -1434,7 +1800,7 @@
 
     $('#downloadBtn').addEventListener('click', () => {
       const current = state.results[state.currentIndex];
-      if (current) downloadImage(current.url, `nextgen-adjusted-${Date.now()}.jpg`);
+      if (current) downloadImage(current.url, imageFilename('nextgen-adjusted', current.url));
     });
   }
 
@@ -1479,7 +1845,7 @@
     });
     $('#modalDownload').addEventListener('click', () => {
       if (state.modalImageUrl) {
-        downloadImage(state.modalImageUrl, `nextgen-${Date.now()}.jpg`);
+        downloadImage(state.modalImageUrl, imageFilename('nextgen', state.modalImageUrl));
       }
     });
   }
@@ -1564,10 +1930,10 @@
       const item = document.createElement('div');
       item.className = 'history-item';
       item.innerHTML = `
-        <img src="${h.url}" alt="历史${i + 1}" />
+        <img src="${escapeAttr(h.url)}" alt="历史${i + 1}" />
         <div class="history-item-info">
-          <div class="history-prompt">${h.prompt}</div>
-          <div class="history-time">${h.time}</div>
+          <div class="history-prompt">${escapeAttr(h.prompt)}</div>
+          <div class="history-time">${escapeAttr(h.time)}</div>
         </div>
       `;
       item.addEventListener('click', () => {
