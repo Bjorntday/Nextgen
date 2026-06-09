@@ -877,6 +877,13 @@
       );
       return;
     }
+    // Close the picker modal *before* showing the OS loupe. In Chromium, the
+    // EyeDropper magnifier is layered above the page, but a high-z-index
+    // modal sitting in front of the page can occlude it or, in some Chromium
+    // versions, prevent the loupe from receiving the click — making the
+    // user think "the button does nothing". Closing the modal first lets
+    // the loupe appear against a clean page and reliably receive the click.
+    closeColorPickModal();
     try {
       const dropper = new window.EyeDropper();
       // The browser shows its own full-screen magnifier; once the user clicks
@@ -886,10 +893,9 @@
       const hex = (result?.sRGBHex || '').toUpperCase();
       if (hex) {
         setActiveColor({ name: '屏幕取色', hex }, { toastMessage: '已取色并应用到当前方案' });
-        closeColorPickModal();
       }
     } catch (err) {
-      // User cancelled (pressed Esc) — keep modal open, no noisy error.
+      // User cancelled (pressed Esc) — modal is already closed, no need to reopen.
       // We only log to console; a modal toast is unnecessary because the user
       // already saw the OS-level "cancelled" indicator.
       if (err && err.name !== 'AbortError') {
