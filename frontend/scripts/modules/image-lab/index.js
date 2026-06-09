@@ -1,3 +1,5 @@
+import { sharedState, SharedKeys } from "../../shared/persistent-state.js";
+
 const langToggleBtn = document.getElementById("langToggleBtn");
 const toStudioBtn = document.getElementById("toStudioBtn");
 const gotoStudioBtn = document.getElementById("gotoStudioBtn");
@@ -728,7 +730,7 @@ async function saveAndGo(item) {
     qualityReports: latestQualityReports,
     generatedImageQuality: generatedQuality,
   };
-  sessionStorage.setItem("shoplive.generatedImage", JSON.stringify(payload));
+  sharedState.set(SharedKeys.GENERATED_IMAGE, payload);
   gotoStudio();
 }
 

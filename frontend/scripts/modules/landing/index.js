@@ -1,4 +1,5 @@
 import { normalizeProductUrlForApi } from "../agent/utils.js";
+import { sharedState, SharedKeys } from "../../shared/persistent-state.js";
 
 const promptInput = document.getElementById("promptInput");
 const langToggleBtn = document.getElementById("langToggleBtn");
@@ -166,9 +167,25 @@ const REF_IMAGE_STORAGE_KEY = "shoplive.landingRefImage";
 const AI_IMAGES_STORAGE_KEY = "shoplive.landingAiImages";
 let currentLang = localStorage.getItem("shoplive.lang") || "zh";
 let idx = 0;
-let selectedRefDataUrl = sessionStorage.getItem(REF_IMAGE_STORAGE_KEY) || "";
+// Migrate any legacy sessionStorage values into persistent shared state on first load.
+sharedState.migrateFromSession(REF_IMAGE_STORAGE_KEY, SharedKeys.LANDING_REF_IMAGE);
+sharedState.migrateFromSession(AI_IMAGES_STORAGE_KEY, SharedKeys.LANDING_AI_IMAGES);
+let selectedRefDataUrl = sharedState.get(SharedKeys.LANDING_REF_IMAGE) || "";
 let uploadAssets = [];
-let aiAssets = [];
+let aiAssets = sharedState.get(SharedKeys.LANDING_AI_IMAGES) || [];
+
+// Cross-page sync: keep local state in sync with sharedState.
+sharedState.subscribe(SharedKeys.LANDING_REF_IMAGE, (newVal) => {
+  selectedRefDataUrl = newVal || "";
+  if (refPreview) refPreview.src = selectedRefDataUrl;
+  updateRefTriggerPreview();
+  renderRefGrid(refUploadGrid, uploadAssets);
+  renderRefGrid(refAiResultGrid, aiAssets, { showVideoBtn: true });
+});
+sharedState.subscribe(SharedKeys.LANDING_AI_IMAGES, (newVal) => {
+  aiAssets = Array.isArray(newVal) ? newVal : [];
+  renderRefGrid(refAiResultGrid, aiAssets, { showVideoBtn: true });
+});
 
 function applyLanguage(lang) {
   currentLang = lang;
@@ -216,11 +233,11 @@ function gotoAgent(extra = {}) {
 }
 
 function gotoAgentWithAiImage(singleDataUrl, allDataUrls = []) {
-  // Store the selected image as primary ref
-  sessionStorage.setItem(REF_IMAGE_STORAGE_KEY, singleDataUrl);
+  // Store the selected image as primary ref (persistent across tabs/refreshes)
+  sharedState.set(SharedKeys.LANDING_REF_IMAGE, singleDataUrl);
   // Store all AI images so agent can show them as a gallery
   try {
-    sessionStorage.setItem(AI_IMAGES_STORAGE_KEY, JSON.stringify(allDataUrls.slice(0, 8)));
+    sharedState.set(SharedKeys.LANDING_AI_IMAGES, allDataUrls.slice(0, 8));
   } catch (_e) {}
   const draft = promptInput ? promptInput.value.trim() : "";
   const params = new URLSearchParams();
@@ -283,7 +300,7 @@ function renderRefGrid(container, items = [], { showVideoBtn = false } = {}) {
     }
     imgBtn.addEventListener("click", () => {
       selectedRefDataUrl = src;
-      sessionStorage.setItem(REF_IMAGE_STORAGE_KEY, src);
+      sharedState.set(SharedKeys.LANDING_REF_IMAGE, src);
       if (refPreview) refPreview.src = src;
       renderRefGrid(container, items, { showVideoBtn });
       if (container === refUploadGrid) renderRefGrid(refAiResultGrid, aiAssets, { showVideoBtn: true });
@@ -307,7 +324,7 @@ function renderRefGrid(container, items = [], { showVideoBtn = false } = {}) {
       useRefBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         selectedRefDataUrl = src;
-        sessionStorage.setItem(REF_IMAGE_STORAGE_KEY, src);
+        sharedState.set(SharedKeys.LANDING_REF_IMAGE, src);
         if (refPreview) refPreview.src = src;
         renderRefGrid(container, items, { showVideoBtn: true });
         updateRefTriggerPreview();
@@ -506,7 +523,7 @@ refFileInput?.addEventListener("change", async (e) => {
   // Auto-select first uploaded image if none selected yet
   if (!selectedRefDataUrl) {
     selectedRefDataUrl = uploadAssets[0];
-    sessionStorage.setItem(REF_IMAGE_STORAGE_KEY, selectedRefDataUrl);
+    sharedState.set(SharedKeys.LANDING_REF_IMAGE, selectedRefDataUrl);
     if (refPreview) refPreview.src = selectedRefDataUrl;
   }
   setActiveRefTab("upload");
@@ -608,7 +625,7 @@ refAiGenerateBtn?.addEventListener("click", async () => {
     await new Promise((r) => setTimeout(r, 300));
     if (!selectedRefDataUrl && aiAssets.length) {
       selectedRefDataUrl = aiAssets[0];
-      sessionStorage.setItem(REF_IMAGE_STORAGE_KEY, selectedRefDataUrl);
+      sharedState.set(SharedKeys.LANDING_REF_IMAGE, selectedRefDataUrl);
       if (refPreview) refPreview.src = selectedRefDataUrl;
     }
     renderRefGrid(refAiResultGrid, aiAssets, { showVideoBtn: true });
@@ -663,8 +680,8 @@ _templateCards.forEach((card) => {
     // Clear stale ref immediately, then fetch this card's thumbnail as the new ref.
     // This lets Veo do image-to-video using the template's cover image.
     selectedRefDataUrl = "";
-    sessionStorage.removeItem(REF_IMAGE_STORAGE_KEY);
-    sessionStorage.removeItem(AI_IMAGES_STORAGE_KEY);
+    sharedState.remove(SharedKeys.LANDING_REF_IMAGE);
+    sharedState.remove(SharedKeys.LANDING_AI_IMAGES);
     updateRefTriggerPreview();
 
     const thumbSrc = card.querySelector(".template-thumb img")?.src || "";
@@ -680,7 +697,7 @@ _templateCards.forEach((card) => {
         }))
         .then((dataUrl) => {
           selectedRefDataUrl = dataUrl;
-          try { sessionStorage.setItem(REF_IMAGE_STORAGE_KEY, dataUrl); } catch (_e) {}
+          try { sharedState.set(SharedKeys.LANDING_REF_IMAGE, dataUrl); } catch (_e) {}
           updateRefTriggerPreview();
           _templateRefFetch = null;
         })

@@ -90,6 +90,101 @@
           <button class="mode-tab" data-mode="inpaint">局部重绘</button>
         </div>
 
+        <section class="trade-workflow" id="tradeWorkflow">
+          <div class="workflow-head">
+            <span class="section-title">外贸商品工作流</span>
+            <span class="workflow-sub">拍照 · 提案 · 报价资料</span>
+          </div>
+          <div class="workflow-tabs" role="tablist" aria-label="外贸商品工作流">
+            <button class="workflow-tab active" type="button" data-workflow="cutout">
+              <span class="workflow-icon">□</span>
+              <span>高清扣图</span>
+            </button>
+            <button class="workflow-tab" type="button" data-workflow="variants">
+              <span class="workflow-icon">◇</span>
+              <span>产品裂变</span>
+            </button>
+            <button class="workflow-tab" type="button" data-workflow="apply">
+              <span class="workflow-icon">◎</span>
+              <span>图案色号应用</span>
+            </button>
+          </div>
+          <div class="workflow-detail" id="workflowDetail">
+            <strong id="workflowTitle">AI 高清扣图 + 批量整理 + Excel 导出</strong>
+            <p id="workflowDesc">适合外贸报价、工厂推广和电商运营。先把随手拍产品图处理成干净主图，再整理成可导出的资料。</p>
+            <div class="workflow-actions">
+              <button class="workflow-action" type="button" data-action="use-template">套用模板</button>
+              <button class="workflow-action muted" type="button" data-action="need-ref">上传产品图</button>
+            </div>
+          </div>
+
+          <!-- 色号应用面板（仅在「图案色号应用」工作流时显示） -->
+          <div class="color-panel" id="colorPanel" hidden>
+            <div class="color-panel-head">
+              <span class="color-panel-title">色号应用</span>
+              <span class="color-panel-hint">点选色卡、取色器取色，或直接输入色号</span>
+            </div>
+            <div class="color-active-row">
+              <div class="color-active-swatch" id="colorActiveSwatch" style="background:#ffffff"></div>
+              <div class="color-active-info">
+                <input type="text" class="color-active-hex" id="colorActiveHex" placeholder="#RRGGBB" maxlength="7" />
+                <input type="text" class="color-active-name" id="colorActiveName" placeholder="色号 / 名称" />
+              </div>
+              <button class="color-eyedropper" id="colorEyedropperBtn" type="button" title="从任意图片取色">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22l1-4 12-12 3 3-12 12-4 1z"/><path d="M14 7l3 3"/></svg>
+                取色器
+              </button>
+              <button class="color-apply" id="colorApplyBtn" type="button" title="追加到提示词">应用到提示词</button>
+            </div>
+            <div class="color-palette" id="colorPalette"></div>
+            <div class="color-saved" id="colorSavedRow" hidden>
+              <span class="color-saved-label">已保存</span>
+              <div class="color-saved-list" id="colorSavedList"></div>
+              <button class="color-clear" id="colorClearBtn" type="button">清空</button>
+            </div>
+          </div>
+
+          <!-- 取色器取图模态：用于「上传任意图片取色」 -->
+          <div class="color-pick-modal" id="colorPickModal" hidden>
+            <div class="color-pick-modal-card">
+              <div class="color-pick-modal-head">
+                <strong>取色器</strong>
+                <button class="color-pick-close" id="colorPickCloseBtn" type="button" aria-label="关闭">×</button>
+              </div>
+              <div class="color-pick-modal-body">
+                <div class="color-pick-actions">
+                  <button class="color-pick-action primary" id="colorPickUploadBtn" type="button">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    上传图片取色
+                  </button>
+                  <input type="file" accept="image/*" id="colorPickFileInput" hidden />
+                  <button class="color-pick-action" id="colorPickFromRefBtn" type="button" hidden>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+                    从已上传参考图取色
+                  </button>
+                  <button class="color-pick-action" id="colorPickNativeBtn" type="button">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
+                    系统取色器（屏幕）
+                  </button>
+                </div>
+                <div class="color-pick-stage" id="colorPickStage">
+                  <div class="color-pick-hint">选择上方任一方式开始取色</div>
+                </div>
+                <div class="color-pick-zoom" id="colorPickZoom" hidden>
+                  <div class="color-pick-zoom-info">
+                    <span id="colorPickZoomCoord">--</span>
+                    <span id="colorPickZoomHex">#--</span>
+                  </div>
+                  <div class="color-pick-zoom-confirm">
+                    <button class="color-pick-cancel" id="colorPickCancelBtn" type="button">取消</button>
+                    <button class="color-pick-confirm" id="colorPickConfirmBtn" type="button" disabled>使用此颜色</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- 提示词区域 -->
         <div class="prompt-section">
           <textarea class="prompt-input" id="promptInput" rows="3" placeholder="描述你想要生成的图片，例如：护肤品礼盒，白色背景，柔和摄影棚灯光，高级电商主图"></textarea>

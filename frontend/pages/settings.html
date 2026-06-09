@@ -55,21 +55,212 @@ select { cursor:pointer; }
 .btn-primary { background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(0,122,255,.2); }
 .btn-primary:hover { background:#0055CC; box-shadow:0 4px 14px rgba(0,122,255,.3); }
 .btn-sm { padding:5px 10px; font-size:11px; }
-.btn-test { padding:5px 12px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text2); font-size:11px; cursor:pointer; transition:all 0.15s; }
-.btn-test:hover { border-color:var(--primary); color:var(--primary); }
-.btn-test.ok { background:#E8F8ED; border-color:var(--green); color:var(--green); }
-.btn-test.fail { background:#FEE; border-color:var(--red); color:var(--red); }
-.btn-test.loading { opacity:0.6; pointer-events:none; }
 
+/* ===== 测试连接按钮（精致态） ===== */
+.btn-test {
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  min-width:auto; padding:5px 11px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:linear-gradient(180deg, #FFFFFF 0%, #FAFBFD 100%);
+  color:var(--text2);
+  font-size:11px; font-weight:600; letter-spacing:0.2px;
+  cursor:pointer; white-space:nowrap;
+  transition:all 0.18s cubic-bezier(.4,0,.2,1);
+}
+.btn-test:hover {
+  border-color:var(--primary);
+  color:var(--primary);
+  background:linear-gradient(180deg, #FFFFFF 0%, rgba(0,122,255,0.04) 100%);
+  box-shadow:0 2px 8px rgba(0,122,255,0.10);
+  transform:translateY(-1px);
+}
+.btn-test:active { transform:translateY(0); }
+.btn-test .btn-test-dot {
+  width:6px; height:6px; border-radius:50%; background:var(--text3);
+  transition:all 0.2s;
+}
+.btn-test:hover .btn-test-dot { background:var(--primary); }
+.btn-test.ok {
+  background:linear-gradient(180deg, #E8F8ED 0%, #D5F2DD 100%);
+  border-color:rgba(52,199,89,0.4);
+  color:#1F7A33;
+  box-shadow:0 2px 8px rgba(52,199,89,0.15);
+}
+.btn-test.ok .btn-test-dot { background:var(--green); box-shadow:0 0 0 3px rgba(52,199,89,0.18); }
+.btn-test.fail {
+  background:linear-gradient(180deg, #FFE9E7 0%, #FFD7D3 100%);
+  border-color:rgba(255,59,48,0.4);
+  color:#A8221A;
+  box-shadow:0 2px 8px rgba(255,59,48,0.15);
+}
+.btn-test.fail .btn-test-dot { background:var(--red); box-shadow:0 0 0 3px rgba(255,59,48,0.18); }
+.btn-test.loading { opacity:0.7; pointer-events:none; }
+.btn-test.loading .btn-test-dot {
+  background:var(--primary);
+  animation:btnTestPulse 1s ease-in-out infinite;
+}
+@keyframes btnTestPulse {
+  0%, 100% { box-shadow:0 0 0 0 rgba(0,122,255,0.4); }
+  50% { box-shadow:0 0 0 4px rgba(0,122,255,0); }
+}
+
+/* ===== 默认模型区 ===== */
 .default-section { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; margin-top:20px; }
 .default-section h3 { font-size:14px; font-weight:600; margin-bottom:10px; }
 
-.custom-list { display:flex; flex-direction:column; gap:5px; }
-.custom-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--muted); border-radius:8px; font-size:12px; }
-.custom-item .name { font-weight:600; flex:1; }
-.custom-item .detail { color:var(--text3); font-size:11px; }
-.btn-danger { background:var(--red); color:#fff; font-size:11px; padding:4px 10px; }
-.custom-form { background:var(--muted); border-radius:10px; padding:14px; margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+/* ===== 自定义 API 区 ===== */
+.custom-section { display:flex; flex-direction:column; gap:14px; }
+
+/* “添加新 API” 卡片 */
+.custom-form {
+  background:#FFFFFF;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px 20px 16px;
+  margin-top:0;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.03);
+}
+.custom-form-head {
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:13px; font-weight:600; color:var(--text);
+  padding-bottom:10px;
+  border-bottom:1px dashed var(--border);
+}
+.custom-form-head .form-tag {
+  font-size:10px; font-weight:600; color:var(--primary);
+  background:rgba(0,122,255,0.08);
+  padding:2px 8px; border-radius:999px;
+}
+.custom-form-grid {
+  display:grid;
+  grid-template-columns:1fr 1.6fr 1fr 1.1fr 110px;
+  gap:10px;
+  align-items:center;
+}
+.custom-form-grid .row { gap:6px; }
+.custom-form-grid label { font-size:11px; color:var(--text2); font-weight:500; min-width:auto; }
+.custom-form-grid input, .custom-form-grid select { width:100%; min-width:0; padding:7px 10px; font-size:12px; }
+.custom-form-actions { display:flex; justify-content:flex-end; padding-top:4px; border-top:1px dashed var(--border); margin-top:2px; }
+.custom-form-actions .btn { padding:7px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:6px; }
+
+/* “已配置”列表 */
+.custom-list { display:flex; flex-direction:column; gap:10px; }
+.custom-list-title {
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; color:var(--text3); font-weight:600;
+  padding:0 2px;
+}
+.custom-list-title .count-pill {
+  font-size:10px; background:var(--muted); color:var(--text2);
+  padding:1px 8px; border-radius:999px; font-weight:700;
+}
+
+/* 卡片：上下布局，精致 */
+.custom-item {
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:0;
+  background:#FFFFFF;
+  border:1px solid var(--border);
+  border-radius:14px;
+  font-size:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  overflow:hidden;
+  transition:all 0.18s cubic-bezier(.4,0,.2,1);
+}
+.custom-item:hover {
+  border-color:rgba(0,122,255,0.25);
+  box-shadow:0 4px 14px rgba(0,0,0,0.06);
+}
+.custom-item-main { padding:14px 16px; min-width:0; }
+.custom-item-head {
+  display:flex; align-items:center; gap:8px;
+  margin-bottom:10px;
+}
+.custom-item-name {
+  font-size:14px; font-weight:700; color:var(--text);
+  display:flex; align-items:center; gap:8px;
+  min-width:0; flex:1;
+}
+.custom-item-name .name-text {
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.custom-item-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; font-weight:600;
+  padding:2px 8px; border-radius:999px;
+  letter-spacing:0.3px;
+  flex-shrink:0;
+}
+.custom-item-badge.type-llm   { background:rgba(88,86,214,0.10); color:#5856D6; }
+.custom-item-badge.type-image { background:rgba(52,199,89,0.10); color:#1F7A33; }
+.custom-item-badge.type-video { background:rgba(255,149,0,0.12); color:#B25E00; }
+.custom-item-badge .badge-dot {
+  width:5px; height:5px; border-radius:50%; background:currentColor;
+}
+.custom-item-fields {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px 14px;
+  margin-bottom:0;
+}
+.custom-field {
+  display:flex; flex-direction:column; gap:2px; min-width:0;
+}
+.custom-field label {
+  font-size:10px; font-weight:600; color:var(--text3);
+  text-transform:uppercase; letter-spacing:0.4px;
+}
+.custom-field .value {
+  font-size:12px; color:var(--text); font-weight:500;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:'SF Mono','SFMono-Regular',Consolas,monospace;
+}
+.custom-field .value.endpoint { color:var(--primary); }
+.custom-field .value.model { color:var(--text); }
+.custom-field .value.key-mask { color:var(--text3); }
+.custom-field .value.key-mask .key-dots { letter-spacing:1.5px; }
+.custom-field .value.key-mask .key-tail { color:var(--text); font-weight:600; margin-left:4px; }
+
+/* 右侧操作区 */
+.custom-item-side {
+  display:flex; flex-direction:column;
+  align-items:stretch; justify-content:center; gap:6px;
+  padding:10px 12px;
+  background:linear-gradient(180deg, #FAFBFD 0%, #F4F6FA 100%);
+  border-left:1px solid var(--border);
+  min-width:118px;
+}
+.custom-item-side .btn-test { width:100%; }
+.icon-btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#FFFFFF;
+  color:var(--text3);
+  cursor:pointer;
+  transition:all 0.15s;
+  align-self:center;
+}
+.icon-btn:hover { color:var(--red); border-color:rgba(255,59,48,0.4); background:#FFF1F0; }
+.icon-btn.danger { /* kept for compatibility */ }
+.icon-btn svg { width:14px; height:14px; }
+
+@media (max-width: 720px) {
+  .custom-form-grid { grid-template-columns:1fr 1fr; }
+  .custom-item { grid-template-columns:1fr; }
+  .custom-item-side {
+    flex-direction:row; justify-content:flex-end;
+    border-left:none; border-top:1px solid var(--border);
+    padding:10px 14px;
+  }
+  .custom-item-fields { grid-template-columns:1fr; }
+}
 
 .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--primary); color:#fff; padding:10px 24px; border-radius:20px; font-size:13px; font-weight:600; z-index:1000; animation:toastIn .3s, toastOut .3s 2s forwards; }
 @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } }
@@ -101,16 +292,30 @@ select { cursor:pointer; }
   <div class="tab-panel" id="panel-image"></div>
   <div class="tab-panel" id="panel-video"></div>
   <div class="tab-panel" id="panel-custom">
-    <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">添加自己的 OpenAI 兼容 API 端点</p>
-    <div class="custom-form">
-      <div class="row"><label>名称</label><input type="text" id="customName" placeholder="我的模型" style="min-width:180px;" /></div>
-      <div class="row"><label>端点</label><input type="text" id="customEndpoint" placeholder="https://my-api.com/v1" style="min-width:240px;" /></div>
-      <div class="row"><label>模型名</label><input type="text" id="customModel" placeholder="model-name" style="min-width:140px;" /></div>
-      <div class="row"><label>API Key</label><input type="password" id="customKey" placeholder="sk-..." /></div>
-      <div class="row"><label>类型</label><select id="customType"><option value="llm">LLM</option><option value="image">图片</option><option value="video">视频</option></select></div>
-      <button class="btn btn-primary btn-sm" style="align-self:flex-start;" onclick="addCustom()">+ 添加</button>
+    <p style="font-size:12px;color:var(--text3);margin:0 0 14px;">添加自己的 OpenAI 兼容 API 端点。填写后点「添加」即可保存到「已配置」列表。</p>
+    <div class="custom-section">
+      <div class="custom-form">
+        <div class="custom-form-head">
+          <span>添加新 API</span>
+          <span class="form-tag">OpenAI 兼容</span>
+        </div>
+        <div class="custom-form-grid">
+          <div class="row"><label>名称</label><input type="text" id="customName" placeholder="我的模型" /></div>
+          <div class="row"><label>端点</label><input type="text" id="customEndpoint" placeholder="https://my-api.com/v1" /></div>
+          <div class="row"><label>模型名</label><input type="text" id="customModel" placeholder="model-name" /></div>
+          <div class="row"><label>API Key</label><input type="password" id="customKey" placeholder="sk-..." /></div>
+          <div class="row"><label>类型</label><select id="customType"><option value="llm">LLM</option><option value="image">图片</option><option value="video">视频</option></select></div>
+        </div>
+        <div class="custom-form-actions">
+          <button class="btn btn-primary" onclick="addCustom()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            添加到已配置
+          </button>
+        </div>
+      </div>
+
+      <div class="custom-list" id="customList"></div>
     </div>
-    <div class="custom-list" id="customList" style="margin-top:12px;"></div>
   </div>
 
   <div class="default-section">
@@ -254,7 +459,7 @@ function createProviderCard(p, cat) {
     + '<div class="provider-body">'
     + '<div class="row"><label>模型</label><select class="model-select" data-provider="'+p.id+'" data-cat="'+cat+'" onchange="onModelChange(\''+cat+'\',\''+p.id+'\',this.value)">'+modelOpts+'</select></div>'
     + '<div class="row"><label>API Key</label><div class="pwd-wrap"><input type="password" class="key-input" data-provider="'+p.id+'" data-cat="'+cat+'" placeholder="sk-..." value="'+(saved.key||'')+'" /><button class="pwd-toggle" onclick="togglePwd(this)">&#128065;</button></div>'
-    + '<button class="btn-test" data-pid="'+p.id+'" data-cat="'+cat+'" data-endpoint="'+(p.endpoint||'')+'" onclick="testConnection(this)">'+(hasKey?'测试连接':'测试连接')+'</button></div>'
+    + '<button class="btn-test" data-pid="'+p.id+'" data-cat="'+cat+'" data-endpoint="'+(p.endpoint||'')+'" onclick="testConnection(this)"><span class="btn-test-dot"></span><span class="btn-test-text">测试连接</span></button></div>'
     + (p.endpoint ? '<div class="endpoint">端点: <strong>'+p.endpoint+'</strong> <span style="font-size:10px;color:var(--text3);">(v1/chat/completions)</span></div>' : '')
     + (p.buyLink ? '<a href="'+p.buyLink+'" target="_blank" style="display:inline-block;margin-top:4px;font-size:11px;color:var(--primary);text-decoration:none;">获取 API Key →</a>' : '')
     + '</div>';
@@ -262,13 +467,111 @@ function createProviderCard(p, cat) {
 }
 
 function renderCustom() {
-  document.getElementById('customList').innerHTML = config.custom.map((c,i) =>
-    '<div class="custom-item"><span class="name">'+c.name+'</span><span class="detail">'+c.endpoint+' · '+c.model+' · '+c.type+'</span><button class="btn-danger" onclick="removeCustom('+i+')">删除</button></div>'
-  ).join('');
+  const list = document.getElementById('customList');
+  if (!config.custom.length) {
+    list.innerHTML =
+      '<div class="custom-list-title">已配置 <span class="count-pill">0</span></div>'
+      + '<div style="font-size:12px;color:var(--text3);padding:18px;text-align:center;background:var(--muted);border-radius:10px;border:1px dashed var(--border);">'
+      +   '暂无自定义 API，使用上方表单添加一个吧'
+      + '</div>';
+    return;
+  }
+  const cards = config.custom.map((c, i) => {
+    const type = c.type || 'llm';
+    const typeLabel = { llm: 'LLM', image: '图片', video: '视频' }[type] || type;
+    const maskedKey = maskApiKey(c.key);
+    return (
+      '<div class="custom-item" data-custom-index="'+i+'">'
+      + '<div class="custom-item-main">'
+      +   '<div class="custom-item-head">'
+      +     '<div class="custom-item-name"><span class="name-text">'+escapeAttr(c.name || '未命名')+'</span></div>'
+      +     '<span class="custom-item-badge type-'+type+'"><span class="badge-dot"></span>'+typeLabel+'</span>'
+      +   '</div>'
+      +   '<div class="custom-item-fields">'
+      +     '<div class="custom-field"><label>端点</label><span class="value endpoint" title="'+escapeAttr(c.endpoint||'')+'">'+escapeAttr(c.endpoint||'—')+'</span></div>'
+      +     '<div class="custom-field"><label>模型</label><span class="value model" title="'+escapeAttr(c.model||'')+'">'+escapeAttr(c.model||'—')+'</span></div>'
+      +     '<div class="custom-field" style="grid-column:1 / -1;"><label>API Key</label><span class="value key-mask">'
+      +       (maskedKey ? '<span class="key-dots">'+maskedKey.dots+'</span><span class="key-tail">'+escapeAttr(maskedKey.tail)+'</span>' : '—')
+      +     '</span></div>'
+      +   '</div>'
+      +   '<input type="hidden" class="custom-name" data-i="'+i+'" value="'+escapeAttr(c.name||'')+'" />'
+      +   '<input type="hidden" class="custom-endpoint" data-i="'+i+'" value="'+escapeAttr(c.endpoint||'')+'" />'
+      +   '<input type="hidden" class="custom-model" data-i="'+i+'" value="'+escapeAttr(c.model||'')+'" />'
+      +   '<input type="hidden" class="custom-key" data-i="'+i+'" value="'+escapeAttr(c.key||'')+'" />'
+      +   '<input type="hidden" class="custom-type" data-i="'+i+'" value="'+type+'" />'
+      + '</div>'
+      + '<div class="custom-item-side">'
+      +   '<button class="btn-test" data-custom-index="'+i+'" onclick="testConnection(this)"><span class="btn-test-dot"></span><span class="btn-test-text">测试连接</span></button>'
+      +   '<button class="icon-btn" title="删除此 API" onclick="removeCustom('+i+')" aria-label="删除">'
+      +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
+      +   '</button>'
+      + '</div>'
+      + '</div>'
+    );
+  }).join('');
+  list.innerHTML =
+    '<div class="custom-list-title">已配置 <span class="count-pill">'+config.custom.length+'</span></div>'
+    + cards;
+}
+
+function maskApiKey(key) {
+  const s = String(key || '').trim();
+  if (!s) return null;
+  if (s.length <= 8) return { dots: '•'.repeat(Math.max(0, s.length - 2)), tail: s.slice(-2) };
+  return { dots: '•'.repeat(Math.min(8, s.length - 4)), tail: s.slice(-4) };
 }
 
 function onModelChange(cat, pid, value) { if(!config[cat][pid]) config[cat][pid]={}; config[cat][pid].model = value; }
 function togglePwd(btn) { const inp=btn.parentElement.querySelector('input'); inp.type=inp.type==='password'?'text':'password'; }
+function escapeAttr(v) {
+  return String(v || '').replace(/[&<>"']/g, function(ch) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]);
+  });
+}
+function normalizeEndpoint(raw) {
+  let endpoint = String(raw || '').trim();
+  if (!endpoint) return '';
+  if (!/^https?:\/\//i.test(endpoint)) endpoint = 'https://' + endpoint;
+  return endpoint.replace(/\/+$/, '');
+}
+function modelsUrlFromEndpoint(raw) {
+  const endpoint = normalizeEndpoint(raw);
+  if (!endpoint) return '';
+  return endpoint.replace(/\/v1$/i, '') + '/v1/models';
+}
+function syncCustomInputs() {
+  document.querySelectorAll('.custom-item[data-custom-index]').forEach(row => {
+    const i = Number(row.dataset.customIndex);
+    if (!config.custom[i]) return;
+    config.custom[i] = {
+      name: row.querySelector('.custom-name')?.value.trim() || '',
+      endpoint: row.querySelector('.custom-endpoint')?.value.trim() || '',
+      model: row.querySelector('.custom-model')?.value.trim() || '',
+      key: row.querySelector('.custom-key')?.value.trim() || '',
+      type: row.querySelector('.custom-type')?.value || 'llm',
+    };
+  });
+}
+function mirrorCustomConfigs() {
+  ['llm','image','video'].forEach(cat => {
+    Object.keys(config[cat] || {}).forEach(pid => {
+      if (config[cat][pid] && config[cat][pid].custom) delete config[cat][pid];
+    });
+  });
+  config.custom.forEach(c => {
+    const cat = c.type || 'llm';
+    const name = String(c.name || '').trim();
+    if (!name || !c.model) return;
+    if (!config[cat]) config[cat] = {};
+    config[cat][name] = {
+      key: c.key || '',
+      model: c.model || '',
+      endpoint: c.endpoint || '',
+      api_base: normalizeEndpoint(c.endpoint),
+      custom: true,
+    };
+  });
+}
 
 function addCustom() {
   const n=document.getElementById('customName').value.trim(), e=document.getElementById('customEndpoint').value.trim();
@@ -278,32 +581,66 @@ function addCustom() {
   config.custom.push({name:n,endpoint:e,model:m,key:k,type:t});
   document.getElementById('customName').value='';document.getElementById('customEndpoint').value='';
   document.getElementById('customModel').value='';document.getElementById('customKey').value='';
-  renderCustom();refreshDefaults();toast('已添加');
+  mirrorCustomConfigs();renderCustom();refreshDefaults();toast('已添加');
 }
-function removeCustom(i){config.custom.splice(i,1);renderCustom();refreshDefaults();}
+function removeCustom(i){syncCustomInputs();config.custom.splice(i,1);mirrorCustomConfigs();renderCustom();refreshDefaults();}
 
 function testConnection(btn) {
-  const pid = btn.dataset.pid, cat = btn.dataset.cat;
-  const keyEl = document.querySelector('.key-input[data-provider="'+pid+'"][data-cat="'+cat+'"]');
-  const key = keyEl ? keyEl.value.trim() : '';
+  let endpoint = '';
+  let key = '';
+  if (btn.dataset.customIndex !== undefined) {
+    const row = btn.closest('.custom-item');
+    endpoint = row?.querySelector('.custom-endpoint')?.value.trim() || '';
+    key = row?.querySelector('.custom-key')?.value.trim() || '';
+  } else {
+    const pid = btn.dataset.pid, cat = btn.dataset.cat;
+    const keyEl = document.querySelector('.key-input[data-provider="'+pid+'"][data-cat="'+cat+'"]');
+    key = keyEl ? keyEl.value.trim() : '';
+    endpoint = btn.dataset.endpoint || 'api.openai.com';
+  }
   if (!key) { toast('请先填写 API Key'); return; }
 
   btn.classList.add('loading');
-  btn.textContent = '连接中...';
+  setTestBtnText(btn, '连接中...');
 
-  const endpoint = (btn.dataset.endpoint || 'api.openai.com').replace(/^https?:\/\//,'');
-  const url = 'https://' + endpoint + '/v1/models';
+  const model = btn.dataset.customIndex !== undefined
+    ? (btn.closest('.custom-item')?.querySelector('.custom-model')?.value.trim() || '')
+    : (document.querySelector('.model-select[data-provider="'+btn.dataset.pid+'"][data-cat="'+btn.dataset.cat+'"]')?.value || '');
+  const type = btn.dataset.customIndex !== undefined
+    ? (btn.closest('.custom-item')?.querySelector('.custom-type')?.value || 'llm')
+    : (btn.dataset.cat || 'llm');
 
-  fetch(url, { method:'GET', headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'} })
-    .then(r => {
-      if (r.ok) { btn.classList.add('ok'); btn.classList.remove('loading','fail'); btn.textContent = '✓ 连接成功'; }
-      else { throw new Error(r.status+' '+r.statusText); }
-    })
-    .catch(e => { btn.classList.add('fail'); btn.classList.remove('loading','ok'); btn.textContent = '✗ '+e.message.substring(0,20); })
-    .finally(() => { setTimeout(()=>{ btn.classList.remove('ok','fail','loading'); btn.textContent='测试连接'; }, 4000); });
+  fetch('/api/settings/test-openai-compatible', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ endpoint: endpoint || 'api.openai.com', api_key: key, model, type })
+  })
+  .then(r => r.json().then(data => ({ ok: r.ok && data.ok, status: r.status, data })))
+  .then(({ok, status, data}) => {
+    if (ok) {
+      btn.classList.add('ok'); btn.classList.remove('loading','fail');
+      setTestBtnText(btn, data.model_count != null ? '✓ 已检测 '+data.model_count+' 个模型' : '✓ 连接成功');
+    }
+    else { throw new Error((data && (data.error || data.error_code)) || ('HTTP '+status)); }
+  })
+  .catch(e => { btn.classList.add('fail'); btn.classList.remove('loading','ok'); setTestBtnText(btn, '✗ '+(e.message||'').substring(0,20)); })
+  .finally(() => { setTimeout(()=>{ btn.classList.remove('ok','fail','loading'); setTestBtnText(btn, '测试连接'); }, 4000); });
+}
+
+function setTestBtnText(btn, text) {
+  // Preserve the leading dot indicator.
+  const textNode = btn.querySelector('.btn-test-text') || btn;
+  textNode.textContent = text;
+  if (!btn.querySelector('.btn-test-dot')) {
+    const dot = document.createElement('span');
+    dot.className = 'btn-test-dot';
+    btn.insertBefore(dot, textNode);
+  }
 }
 
 function refreshDefaults() {
+  syncCustomInputs();
+  mirrorCustomConfigs();
   const lo=[], io=[], vo=[];
   [...INTL_LLM, ...CN_LLM].forEach(p=>{p.models.forEach(m=>lo.push(p.id+':'+m));});
   IMAGE_PROVIDERS.forEach(p=>{p.models.forEach(m=>io.push(p.id+':'+m));});
@@ -326,8 +663,10 @@ function syncDefaultModelToProvider(cat, value) {
 }
 
 function saveAll() {
+  syncCustomInputs();
   document.querySelectorAll('.key-input').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider; if(!config[c][p])config[c][p]={}; config[c][p].key=el.value.trim();});
   document.querySelectorAll('.model-select').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider; if(!config[c][p])config[c][p]={}; config[c][p].model=el.value;});
+  mirrorCustomConfigs();
   config.defaults.llm=document.getElementById('defaultLlm').value;
   config.defaults.image=document.getElementById('defaultImage').value;
   config.defaults.video=document.getElementById('defaultVideo').value;

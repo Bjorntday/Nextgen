@@ -1,4 +1,5 @@
 import { createTransientBackoffByPreset } from "../../shared/polling.js";
+import { sharedState, SharedKeys } from "../../shared/persistent-state.js";
 import { currentLang, setCurrentLang, i18n, shortFeedback, feedbackDeck, insightPulseDeck, targetBatches, brandBatches, REGION_ITEMS, t, shuffle, nextLead, withLead, nextInsightPulseLine } from './i18n.js';
 import { state, smartOptionCache, MAX_CONCURRENT_VIDEO_JOBS, CHAT_TAIL_LIMIT_WHEN_SPLIT } from './state.js';
 import { getApiBase, postJson, postSse, normalizeHttpUrlForApi, normalizeProductUrlForApi, toAbsoluteVideoUrl } from './utils.js';
@@ -5315,7 +5316,7 @@ function consumeLandingParams() {
   }
   if (from === "landing-ref") {
     try {
-      const dataUrl = String(sessionStorage.getItem("shoplive.landingRefImage") || "").trim();
+      const dataUrl = String(sharedState.get(SharedKeys.LANDING_REF_IMAGE) || "").trim();
       if (dataUrl && !state.images.length) {
         state.images = [{ dataUrl, name: "landing-reference.png", source: "landing-ref" }];
         pushImageMsg(state.images);
@@ -5353,9 +5354,9 @@ function consumeLandingParams() {
   }
   if (from === "landing-ai-image") {
     try {
-      const primaryUrl = String(sessionStorage.getItem("shoplive.landingRefImage") || "").trim();
+      const primaryUrl = String(sharedState.get(SharedKeys.LANDING_REF_IMAGE) || "").trim();
       let allUrls = [];
-      try { allUrls = JSON.parse(sessionStorage.getItem("shoplive.landingAiImages") || "[]"); } catch (_e) {}
+      try { allUrls = sharedState.get(SharedKeys.LANDING_AI_IMAGES) || []; } catch (_e) {}
       if (!Array.isArray(allUrls) || !allUrls.length) allUrls = primaryUrl ? [primaryUrl] : [];
       if (allUrls.length && !state.images.length) {
         state.images = allUrls.map((url, i) => ({

@@ -464,10 +464,200 @@ def api_health():
     })
 
 
+@app.post("/api/settings/test-openai-compatible")
+def api_test_openai_compatible_model():
+    """Test an OpenAI-compatible model endpoint without exposing the key to browser CORS."""
+    from flask import jsonify as _jsonify
+    import requests as _requests
+
+    payload = request.get_json(silent=True) or {}
+    endpoint = str(payload.get("endpoint") or payload.get("api_base") or "").strip()
+    api_key = str(payload.get("api_key") or "").strip()
+    api_type = str(payload.get("type") or payload.get("category") or "llm").strip().lower()
+    if not endpoint:
+        return json_error("endpoint 不能为空", 400, error_code="MISSING_ENDPOINT")
+    if not api_key:
+        return json_error("api_key 不能为空", 400, error_code="MISSING_API_KEY")
+    if not endpoint.lower().startswith(("http://", "https://")):
+        endpoint = "https://" + endpoint
+    endpoint = endpoint.rstrip("/")
+    base = endpoint[:-3] if endpoint.lower().endswith("/v1") else endpoint
+    url = f"{base}/v1/models"
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    try:
+        resp = _requests.get(url, headers=headers, timeout=20)
+        content_type = resp.headers.get("content-type", "")
+        data = resp.json() if "json" in content_type.lower() else {"raw": resp.text[:500]}
+        if not resp.ok:
+            if api_type == "image" and resp.status_code == 404:
+                probe_results = []
+                for path in ("/v1/images/generations", "/v1/images/edits"):
+                    probe_url = f"{base}{path}"
+                    probe = _requests.head(probe_url, headers=headers, timeout=20)
+                    probe_results.append({"endpoint": probe_url, "status_code": probe.status_code})
+                    if probe.status_code in {200, 204, 400, 405, 415, 422}:
+                        return _jsonify({
+                            "ok": True,
+                            "status_code": probe.status_code,
+                            "endpoint": probe_url,
+                            "model_count": None,
+                            "message": "/v1/models 未开放，已按图片接口探测通过。",
+                            "response": {"models": data, "probe": probe_results},
+                        })
+            return json_error(
+                f"模型检测失败: HTTP {resp.status_code}",
+                400,
+                recovery_suggestion=str(data)[:300],
+                error_code="MODEL_TEST_FAILED",
+            )
+        models = data.get("data") if isinstance(data, dict) else None
+        return _jsonify({
+            "ok": True,
+            "status_code": resp.status_code,
+            "endpoint": url,
+            "model_count": len(models) if isinstance(models, list) else None,
+            "response": data,
+        })
+    except Exception as exc:
+        return json_error(
+            f"模型检测失败: {exc}",
+            500,
+            recovery_suggestion="检查端点是否为 OpenAI 兼容地址，例如 https://api.example.com/v1。",
+            error_code="MODEL_TEST_ERROR",
+        )
+
+
 # ---------------------------------------------------------------------------
 # OpenAPI 3.0 Spec Auto-Generation (Article: "OpenAPI 自动生成")
 # Generated from Pydantic request schemas — always in sync with code.
 # ---------------------------------------------------------------------------
+
+@app.post("/api/image/openai-compatible/generate")
+def api_openai_compatible_image_generate():
+    """Generate images through an OpenAI-compatible image endpoint."""
+    from flask import jsonify as _jsonify
+    import base64 as _base64
+    import io as _io
+    import requests as _requests
+
+    payload = request.get_json(silent=True) or {}
+    endpoint = str(payload.get("endpoint") or payload.get("api_base") or "").strip()
+    api_key = str(payload.get("api_key") or "").strip()
+    model = str(payload.get("model") or "").strip()
+    prompt = str(payload.get("prompt") or "").strip()
+    mode = str(payload.get("mode") or "txt2img").strip().lower()
+    count = max(1, min(int(payload.get("count") or payload.get("n") or 1), 4))
+    ratio = str(payload.get("ratio") or "1:1").strip()
+
+    if not endpoint:
+        return json_error("endpoint 不能为空", 400, error_code="MISSING_ENDPOINT")
+    if not api_key:
+        return json_error("api_key 不能为空", 400, error_code="MISSING_API_KEY")
+    if not model:
+        return json_error("model 不能为空", 400, error_code="MISSING_MODEL")
+    if not prompt:
+        return json_error("prompt 不能为空", 400, error_code="MISSING_PROMPT")
+    if not endpoint.lower().startswith(("http://", "https://")):
+        endpoint = "https://" + endpoint
+
+    endpoint = endpoint.rstrip("/")
+    base = endpoint[:-3] if endpoint.lower().endswith("/v1") else endpoint
+    # OpenAI-compatible image APIs (DALL·E 3, gpt-image-1, and most OpenAI-shaped providers)
+    # support these standard sizes. We map every aspect ratio to the closest supported size;
+    # providers that only accept a subset will return their own error and we surface it.
+    size = {
+        "1:1": "1024x1024",
+        "4:3": "1536x1024",   # ≈ 3:2 landscape, closest to 4:3
+        "3:2": "1536x1024",
+        "16:9": "1536x1024",  # closest landscape
+        "3:4": "1024x1536",   # ≈ 2:3 portrait
+        "2:3": "1024x1536",
+        "9:16": "1024x1536",  # closest portrait
+    }.get(ratio, "1024x1024")
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    def _read_response(resp):
+        content_type = resp.headers.get("content-type", "")
+        return resp.json() if "json" in content_type.lower() else {"raw": resp.text[:1000]}
+
+    def _extract_images(data):
+        images = []
+        items = data.get("data") if isinstance(data, dict) else None
+        if not isinstance(items, list):
+            items = data.get("images") if isinstance(data, dict) else None
+        if not isinstance(items, list):
+            return images
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if isinstance(item.get("url"), str):
+                images.append({"url": item["url"]})
+            elif isinstance(item.get("b64_json"), str):
+                images.append({"url": f"data:image/png;base64,{item['b64_json']}"})
+            elif isinstance(item.get("base64"), str):
+                mime = item.get("mime_type") or item.get("mime") or "image/png"
+                images.append({"url": f"data:{mime};base64,{item['base64']}"})
+            elif isinstance(item.get("data_url"), str):
+                images.append({"url": item["data_url"]})
+        return images
+
+    try:
+        if mode == "txt2img":
+            url = f"{base}/v1/images/generations"
+            resp = _requests.post(
+                url,
+                headers={**headers, "Content-Type": "application/json"},
+                json={"model": model, "prompt": prompt, "n": count, "size": size},
+                timeout=120,
+            )
+        else:
+            image_data = str(payload.get("image") or payload.get("ref_image") or "").strip()
+            if not image_data:
+                return json_error("图生图/局部重绘需要上传图片", 400, error_code="MISSING_IMAGE")
+            b64, mime = parse_data_url(image_data)
+            ext = "jpg" if mime == "image/jpeg" else "png"
+            files = {"image": (f"input.{ext}", _io.BytesIO(_base64.b64decode(b64)), mime)}
+            mask_data = str(payload.get("mask") or "").strip()
+            if mask_data:
+                mask_b64, mask_mime = parse_data_url(mask_data)
+                mask_ext = "jpg" if mask_mime == "image/jpeg" else "png"
+                files["mask"] = (f"mask.{mask_ext}", _io.BytesIO(_base64.b64decode(mask_b64)), mask_mime)
+            url = f"{base}/v1/images/edits"
+            resp = _requests.post(
+                url,
+                headers=headers,
+                data={"model": model, "prompt": prompt, "n": str(count), "size": size},
+                files=files,
+                timeout=120,
+            )
+
+        data = _read_response(resp)
+        if not resp.ok:
+            return json_error(
+                f"图片生成失败 HTTP {resp.status_code}",
+                resp.status_code if resp.status_code >= 400 else 502,
+                recovery_suggestion=str(data)[:500],
+                error_code="IMAGE_GENERATION_FAILED",
+            )
+        images = _extract_images(data)
+        if not images:
+            return json_error(
+                "图片接口返回成功，但未找到图片结果",
+                502,
+                recovery_suggestion=str(data)[:500],
+                error_code="IMAGE_RESULT_EMPTY",
+            )
+        return _jsonify({"ok": True, "endpoint": url, "model": model, "images": images, "response": data})
+    except ValueError as exc:
+        return json_error(str(exc), 400, error_code="INVALID_IMAGE")
+    except Exception as exc:
+        return json_error(
+            f"图片生成请求失败: {exc}",
+            502,
+            recovery_suggestion="检查端点、模型名、API Key 和网络连通性。",
+            error_code="IMAGE_GENERATION_ERROR",
+        )
+
 
 _openapi_spec_cache: dict = {}  # cached once at first request
 

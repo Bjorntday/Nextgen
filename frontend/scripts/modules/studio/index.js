@@ -1,4 +1,5 @@
 import { createTransientBackoffByPreset } from "../../shared/polling.js";
+import { sharedState, SharedKeys } from "../../shared/persistent-state.js";
 
 const taskName = document.getElementById("taskName");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -711,10 +712,14 @@ async function ingestFiles(fileList) {
 }
 
 function ingestGeneratedImageFromSession() {
-  const raw = sessionStorage.getItem("shoplive.generatedImage");
-  if (!raw) return;
+  // Prefer persistent shared state, fall back to legacy sessionStorage for back-compat.
+  const payload = sharedState.get(SharedKeys.GENERATED_IMAGE) || (() => {
+    const raw = sessionStorage.getItem("shoplive.generatedImage");
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (_e) { return null; }
+  })();
+  if (!payload) return;
   try {
-    const payload = JSON.parse(raw);
     const dataUrl = payload?.imageDataUrl;
     if (!dataUrl) return;
     assetCount += 1;
@@ -791,6 +796,7 @@ function ingestGeneratedImageFromSession() {
   } catch (_error) {
     // ignore parse errors
   } finally {
+    sharedState.remove(SharedKeys.GENERATED_IMAGE);
     sessionStorage.removeItem("shoplive.generatedImage");
   }
 }
