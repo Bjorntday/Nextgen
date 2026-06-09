@@ -58,6 +58,7 @@ select { cursor:pointer; }
 
 /* ===== 测试连接按钮（精致态） ===== */
 .btn-test {
+  position:relative;
   display:inline-flex; align-items:center; justify-content:center; gap:5px;
   min-width:auto; padding:5px 11px;
   border:1px solid var(--border);
@@ -93,7 +94,25 @@ select { cursor:pointer; }
   border-color:rgba(255,59,48,0.4);
   color:#A8221A;
   box-shadow:0 2px 8px rgba(255,59,48,0.15);
+  cursor:help;
 }
+.btn-test.fail::after {
+  content:"点击查看详情";
+  position:absolute;
+  bottom:calc(100% + 4px);
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,0.78);
+  color:#fff;
+  font-size:10px;
+  padding:2px 6px;
+  border-radius:4px;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.15s;
+}
+.btn-test.fail:hover::after { opacity:1; }
 .btn-test.fail .btn-test-dot { background:var(--red); box-shadow:0 0 0 3px rgba(255,59,48,0.18); }
 .btn-test.loading { opacity:0.7; pointer-events:none; }
 .btn-test.loading .btn-test-dot {
@@ -263,6 +282,48 @@ select { cursor:pointer; }
 }
 
 .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--primary); color:#fff; padding:10px 24px; border-radius:20px; font-size:13px; font-weight:600; z-index:1000; animation:toastIn .3s, toastOut .3s 2s forwards; }
+
+/* Detailed test-connection error toast */
+.test-error-toast {
+  position:fixed; right:24px; bottom:24px;
+  width:380px; max-width:calc(100vw - 48px);
+  background:#FFFFFF;
+  border:1px solid rgba(255,59,48,0.25);
+  border-radius:14px;
+  box-shadow:0 18px 50px rgba(0,0,0,0.18);
+  z-index:1200;
+  overflow:hidden;
+  animation:testErrorIn .25s cubic-bezier(.4,0,.2,1);
+}
+.test-error-toast.is-out { animation:testErrorOut .25s forwards; }
+.test-error-head {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px;
+  background:linear-gradient(180deg, #FFE9E7 0%, #FFD7D3 100%);
+  border-bottom:1px solid rgba(255,59,48,0.18);
+  font-size:13px;
+  color:#A8221A;
+}
+.test-error-head strong { flex:1; }
+.test-error-icon { font-weight:800; }
+.test-error-close {
+  width:24px; height:24px; border-radius:50%;
+  background:rgba(255,255,255,0.6); border:none;
+  font-size:14px; line-height:1; cursor:pointer;
+  color:#A8221A;
+}
+.test-error-close:hover { background:#FFFFFF; }
+.test-error-body { padding:10px 14px; font-size:12px; color:var(--text); }
+.test-error-line {
+  padding:3px 0;
+  border-bottom:1px dashed var(--border);
+  word-break:break-all;
+  font-family:'SF Mono','SFMono-Regular',Consolas,monospace;
+  line-height:1.4;
+}
+.test-error-line:last-child { border-bottom:none; color:var(--text3); font-size:11px; }
+@keyframes testErrorIn { from { opacity:0; transform:translateX(20px); } }
+@keyframes testErrorOut { to { opacity:0; transform:translateX(20px); } }
 @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } }
 @keyframes toastOut { to { opacity:0; } }
 </style>
@@ -621,10 +682,38 @@ function testConnection(btn) {
       btn.classList.add('ok'); btn.classList.remove('loading','fail');
       setTestBtnText(btn, data.model_count != null ? '✓ 已检测 '+data.model_count+' 个模型' : '✓ 连接成功');
     }
-    else { throw new Error((data && (data.error || data.error_code)) || ('HTTP '+status)); }
+    else {
+      // Backend returns: { error, error_code, recovery_suggestion, status_code }
+      const err = data || {};
+      const head = err.error || err.error_code || ('HTTP ' + status);
+      const detail = err.recovery_suggestion
+        || (err.response && JSON.stringify(err.response).slice(0, 200))
+        || '';
+      btn.classList.add('fail'); btn.classList.remove('loading','ok');
+      setTestBtnText(btn, '✗ ' + String(head).substring(0, 30));
+      // Stash the full text on the button for the tooltip + click-to-show.
+      btn.dataset.lastError = JSON.stringify({
+        head: String(head),
+        detail: String(detail).slice(0, 500),
+        status: status,
+        when: new Date().toISOString(),
+      });
+      btn.title = head + (detail ? ' — ' + detail : '');
+    }
   })
-  .catch(e => { btn.classList.add('fail'); btn.classList.remove('loading','ok'); setTestBtnText(btn, '✗ '+(e.message||'').substring(0,20)); })
-  .finally(() => { setTimeout(()=>{ btn.classList.remove('ok','fail','loading'); setTestBtnText(btn, '测试连接'); }, 4000); });
+  .catch(e => {
+    btn.classList.add('fail'); btn.classList.remove('loading','ok');
+    const head = e.message || '网络错误';
+    setTestBtnText(btn, '✗ ' + String(head).substring(0, 30));
+    btn.dataset.lastError = JSON.stringify({
+      head: String(head),
+      detail: '',
+      status: 0,
+      when: new Date().toISOString(),
+    });
+    btn.title = head;
+  })
+  .finally(() => { setTimeout(()=>{ btn.classList.remove('ok','fail','loading'); setTestBtnText(btn, '测试连接'); }, 5000); });
 }
 
 function setTestBtnText(btn, text) {
@@ -636,6 +725,42 @@ function setTestBtnText(btn, text) {
     dot.className = 'btn-test-dot';
     btn.insertBefore(dot, textNode);
   }
+}
+
+// Click a failed "测试连接" button to see the full error in a toast.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-test');
+  if (!btn || !btn.classList.contains('fail')) return;
+  let info = null;
+  try { info = btn.dataset.lastError ? JSON.parse(btn.dataset.lastError) : null; } catch (_e) {}
+  if (!info) return;
+  e.preventDefault();
+  e.stopPropagation();
+  showTestErrorToast(info);
+});
+
+function showTestErrorToast(info) {
+  const old = document.getElementById('testErrorToast');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'testErrorToast';
+  wrap.className = 'test-error-toast';
+  const lines = [];
+  if (info.status) lines.push('HTTP ' + info.status);
+  if (info.head) lines.push(info.head);
+  if (info.detail) lines.push('💡 ' + info.detail);
+  if (info.when) lines.push(info.when.replace('T', ' ').slice(0, 19));
+  wrap.innerHTML =
+    '<div class="test-error-head">'
+    +   '<span class="test-error-icon">✗</span>'
+    +   '<strong>连接失败</strong>'
+    +   '<button class="test-error-close" aria-label="关闭">×</button>'
+    + '</div>'
+    + '<div class="test-error-body">' + lines.map(l => '<div class="test-error-line">' + escapeAttr(l) + '</div>').join('') + '</div>';
+  document.body.appendChild(wrap);
+  wrap.querySelector('.test-error-close').addEventListener('click', () => wrap.remove());
+  setTimeout(() => wrap.classList.add('is-out'), 8000);
+  setTimeout(() => wrap.remove(), 8500);
 }
 
 function refreshDefaults() {
