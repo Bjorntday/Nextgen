@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  nextgen:
+    build: .
+    image: nextgen:local
+    container_name: nextgen
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+      - ./.env:/app/.env:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/pages/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "com.nextgen.version=1.0.0"
+      - "com.nextgen.auto-update=true"

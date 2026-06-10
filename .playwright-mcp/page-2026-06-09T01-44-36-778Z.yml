@@ -1,0 +1,207 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - link [ref=e3] [cursor=pointer]:
+      - /url: /pages/index.html
+      - img [ref=e4]
+    - link "做视频" [ref=e5] [cursor=pointer]:
+      - /url: /pages/agent.html
+      - img [ref=e6]
+    - link "做图片" [ref=e10] [cursor=pointer]:
+      - /url: /pages/image-editor.html
+      - img [ref=e11]
+    - link "去分发" [ref=e15] [cursor=pointer]:
+      - /url: /pages/distribute.html
+      - img [ref=e16]
+    - link "设置" [ref=e18] [cursor=pointer]:
+      - /url: /pages/settings.html
+      - img [ref=e19]
+  - main [ref=e22]:
+    - heading "模型中心" [level=1] [ref=e23]
+    - paragraph [ref=e24]: 统一管理文案、图片、视频模型；各功能页会自动读取这里的默认模型与 API Key。
+    - generic [ref=e25]:
+      - button "LLM 文案模型" [ref=e26] [cursor=pointer]
+      - button "图片生成模型" [ref=e27] [cursor=pointer]
+      - button "视频生成模型" [ref=e28] [cursor=pointer]
+      - button "自定义 API" [ref=e29] [cursor=pointer]
+    - generic [ref=e117]:
+      - paragraph [ref=e118]: 添加自己的 OpenAI 兼容 API 端点。填写后点「添加」即可保存到「已配置」列表。
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - generic [ref=e121]:
+            - generic [ref=e122]: 添加新 API
+            - generic [ref=e123]: OpenAI 兼容
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - generic [ref=e126]: 名称
+              - textbox "我的模型" [ref=e127]
+            - generic [ref=e128]:
+              - generic [ref=e129]: 端点
+              - textbox "https://my-api.com/v1" [ref=e130]
+            - generic [ref=e131]:
+              - generic [ref=e132]: 模型名
+              - textbox "model-name" [ref=e133]
+            - generic [ref=e134]:
+              - generic [ref=e135]: API Key
+              - textbox "sk-..." [ref=e136]
+            - generic [ref=e137]:
+              - generic [ref=e138]: 类型
+              - combobox [ref=e139] [cursor=pointer]:
+                - option "LLM" [selected]
+                - option "图片"
+                - option "视频"
+          - button "添加到已配置" [ref=e141] [cursor=pointer]:
+            - img [ref=e142]
+            - text: 添加到已配置
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - text: 已配置
+            - generic [ref=e145]: "3"
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - generic [ref=e150]: tuzi-prod
+                - generic [ref=e151]: 图片
+              - generic [ref=e153]:
+                - generic [ref=e154]:
+                  - generic [ref=e155]: 端点
+                  - generic "https://api.tuzi.example/v1" [ref=e156]
+                - generic [ref=e157]:
+                  - generic [ref=e158]: 模型
+                  - generic "gpt-image-2" [ref=e159]
+                - generic [ref=e160]:
+                  - generic [ref=e161]: API Key
+                  - generic [ref=e162]: ••••••••abcd
+            - generic [ref=e163]:
+              - button "测试连接" [ref=e225] [cursor=pointer]:
+                - generic [ref=e166]: 测试连接
+              - button "删除" [ref=e167] [cursor=pointer]:
+                - img [ref=e168]
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - generic [ref=e174]:
+                - generic [ref=e176]: my-llm
+                - generic [ref=e177]: LLM
+              - generic [ref=e179]:
+                - generic [ref=e180]:
+                  - generic [ref=e181]: 端点
+                  - generic "https://api.openai.com/v1" [ref=e182]
+                - generic [ref=e183]:
+                  - generic [ref=e184]: 模型
+                  - generic "gpt-4o-mini" [ref=e185]
+                - generic [ref=e186]:
+                  - generic [ref=e187]: API Key
+                  - generic [ref=e188]: ••••••••1234
+            - generic [ref=e189]:
+              - button "测试连接" [ref=e190] [cursor=pointer]:
+                - generic [ref=e192]: 测试连接
+              - button "删除" [ref=e193] [cursor=pointer]:
+                - img [ref=e194]
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - generic [ref=e200]:
+                - generic [ref=e202]: wanx
+                - generic [ref=e203]: 视频
+              - generic [ref=e205]:
+                - generic [ref=e206]:
+                  - generic [ref=e207]: 端点
+                  - generic "https://dashscope.aliyuncs.com/v1" [ref=e208]
+                - generic [ref=e209]:
+                  - generic [ref=e210]: 模型
+                  - generic "wan2.6-t2i" [ref=e211]
+                - generic [ref=e212]:
+                  - generic [ref=e213]: API Key
+                  - generic [ref=e214]: ••••••xx
+            - generic [ref=e215]:
+              - button "测试连接" [ref=e216] [cursor=pointer]:
+                - generic [ref=e218]: 测试连接
+              - button "删除" [ref=e219] [cursor=pointer]:
+                - img [ref=e220]
+    - generic [ref=e103]:
+      - heading "默认模型选择" [level=3] [ref=e104]
+      - generic [ref=e105]:
+        - generic [ref=e106]: 文案模型
+        - combobox [ref=e107] [cursor=pointer]:
+          - option "openai:gpt-5.5"
+          - option "openai:gpt-5.4"
+          - option "openai:gpt-5.4-mini"
+          - option "anthropic:claude-opus-4-7"
+          - option "anthropic:claude-sonnet-4-6" [selected]
+          - option "google:gemini-3.1-pro"
+          - option "google:gemini-2.5-pro"
+          - option "google:gemini-2.5-flash"
+          - option "qwen:qwen3.6-plus"
+          - option "qwen:qwen3.6-max"
+          - option "qwen:qwen3.5-235b"
+          - option "deepseek:deepseek-v4-pro"
+          - option "deepseek:deepseek-v4-flash"
+          - option "minimax:MiniMax-M3"
+          - option "zhipu:GLM-5.1"
+          - option "zhipu:GLM-5-Flash"
+          - option "xiaomi:MiMo-V2.5-Pro"
+          - option "xiaomi:MiMo-V2.5"
+          - option "ernie:ernie-5.1"
+          - option "ernie:ernie-5.0"
+          - option "moonshot:moonshot-v1-128k"
+          - option "moonshot:moonshot-v1-32k"
+      - generic [ref=e108]:
+        - generic [ref=e109]: 图片模型
+        - combobox [ref=e110] [cursor=pointer]:
+          - option "imagen:imagen-4.0-ultra"
+          - option "imagen:imagen-4.0"
+          - option "flux:flux-2-max"
+          - option "flux:flux-2"
+          - option "flux:flux-1.1-pro"
+          - option "dalle:gpt-image"
+          - option "dalle:dall-e-3"
+          - option "ideogram:ideogram-v3-quality"
+          - option "ideogram:ideogram-v3"
+          - option "recraft:recraft-v4.1-utility-pro"
+          - option "recraft:recraft-v4"
+          - option "midjourney:mj-v7"
+          - option "midjourney:mj-v6.1"
+          - option "sd:sd3.5-large"
+          - option "sd:sd3.5-medium"
+          - option "seedream:seedream-4.5"
+          - option "seedream:seedream-4.0"
+          - option "pixverse:pixverse-v5.6"
+          - option "pixverse:pixverse-v5"
+          - option "jimeng:jimeng-5.0" [selected]
+          - option "jimeng:jimeng-4.6"
+          - option "wanx:wan2.7-image-pro"
+          - option "wanx:wan2.6-t2i"
+          - option "kling-image:kling-image-o1"
+      - generic [ref=e111]:
+        - generic [ref=e112]: 视频模型
+        - combobox [ref=e113] [cursor=pointer]:
+          - option "veo:veo-3.1-audio"
+          - option "veo:veo-3"
+          - option "tabcode:grok-imagine-1.0-video"
+          - option "runway:runway-gen-4.5"
+          - option "runway:runway-gen-4"
+          - option "runway:runway-gen4-turbo"
+          - option "sora:sora-2-pro"
+          - option "sora:sora-2"
+          - option "pika:pika-v2.2"
+          - option "pika:pika-v2"
+          - option "ltx:ltx-2-19b"
+          - option "ltx:ltx-2"
+          - option "luma:luma-ray"
+          - option "luma:luma-2"
+          - option "pixverse:pixverse-gradient"
+          - option "pixverse:pixverse-v5.6"
+          - option "minimax-video:minimax-hailuo-02"
+          - option "minimax-video:minimax-hailuo"
+          - option "seedance:seedance-2.0-720p"
+          - option "seedance:seedance-v1.5-pro"
+          - option "happyhorse:happyhorse-1.0"
+          - option "wan:wan2.7-t2v"
+          - option "wan:wan2.5-i2v-preview"
+          - option "kling:kling-2.5-turbo-1080p"
+          - option "kling:kling-v3-pro"
+          - option "kling:kling-2.1"
+          - option "vidu:vidu-q2"
+          - option "vidu:vidu-grad"
+          - option "jimeng-video:jimeng-video-3.0" [selected]
+    - generic [ref=e114]:
+      - button "保存配置" [ref=e115] [cursor=pointer]
+      - button "导出" [ref=e116] [cursor=pointer]

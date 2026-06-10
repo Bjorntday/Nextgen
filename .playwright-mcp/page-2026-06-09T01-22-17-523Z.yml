@@ -1,0 +1,194 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - link "NextGen" [ref=e3] [cursor=pointer]:
+      - /url: /pages/index.html
+      - img "NextGen" [ref=e4]
+    - link "做视频" [ref=e5] [cursor=pointer]:
+      - /url: /pages/agent.html
+      - img [ref=e6]
+      - generic: 做视频
+    - link "做图片" [ref=e10] [cursor=pointer]:
+      - /url: /pages/image-editor.html
+      - img [ref=e11]
+      - generic: 做图片
+    - link "去分发" [ref=e15] [cursor=pointer]:
+      - /url: /pages/distribute.html
+      - img [ref=e16]
+      - generic: 去分发
+    - link "设置" [ref=e18] [cursor=pointer]:
+      - /url: /pages/settings.html
+      - img [ref=e19]
+      - generic: 设置
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - img "NextGen" [ref=e25]
+        - generic [ref=e26]:
+          - strong [ref=e27]: NEXTGEN
+          - generic [ref=e28]: Image Studio
+      - generic [ref=e29]:
+        - button "AI 生图" [ref=e30] [cursor=pointer]
+        - button "图片调整" [ref=e31] [cursor=pointer]
+      - link "返回首页" [ref=e33] [cursor=pointer]:
+        - /url: /pages/index.html
+    - generic [ref=e34]:
+      - complementary [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: AI IMAGE
+            - heading "AI 图片生成" [level=1] [ref=e39]
+            - paragraph [ref=e40]: 输入想法，生成电商素材。
+          - generic [ref=e41]:
+            - button "文生图" [ref=e42] [cursor=pointer]
+            - button "图生图" [ref=e43] [cursor=pointer]
+            - button "局部重绘" [ref=e44] [cursor=pointer]
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e47]: 外贸商品工作流
+              - generic [ref=e48]: 拍照 · 提案 · 报价资料
+            - tablist "外贸商品工作流" [ref=e49]:
+              - button "□ 高清扣图" [ref=e50] [cursor=pointer]:
+                - generic [ref=e51]: □
+                - generic [ref=e52]: 高清扣图
+              - button "◇ 产品裂变" [ref=e53] [cursor=pointer]:
+                - generic [ref=e54]: ◇
+                - generic [ref=e55]: 产品裂变
+              - button "◎ 图案色号应用" [ref=e56] [cursor=pointer]:
+                - generic [ref=e57]: ◎
+                - generic [ref=e58]: 图案色号应用
+            - generic [ref=e59]:
+              - strong [ref=e60]: 图案快速应用 + 指定 Pantone 色号预览
+              - paragraph [ref=e61]: 适合客户确认设计方向。把图案、想法或色号快速应用到产品上，几分钟看到接近打样的效果。
+              - generic [ref=e62]:
+                - button "套用模板" [ref=e63] [cursor=pointer]
+                - button "上传产品图" [ref=e64] [cursor=pointer]
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - generic [ref=e67]: 色号应用
+                - generic [ref=e68]: 点选色卡、取色器取色，或直接输入色号
+              - generic [ref=e69]:
+                - generic [ref=e71]:
+                  - textbox "#RRGGBB" [ref=e72]: "#7A1F2B"
+                  - textbox "色号 / 名称" [ref=e73]: 酒红
+                - button "取色器" [ref=e74] [cursor=pointer]:
+                  - img [ref=e75]
+                  - text: 取色器
+                - button "应用到提示词" [ref=e78] [cursor=pointer]
+              - generic [ref=e79]:
+                - 'button "正黑 #000000" [ref=e80] [cursor=pointer]':
+                  - generic: "正黑 #000000"
+                - 'button "本白 #F8F4E9" [ref=e81] [cursor=pointer]':
+                  - generic: "本白 #F8F4E9"
+                - 'button "米白 #EFE6D5" [ref=e82] [cursor=pointer]':
+                  - generic: "米白 #EFE6D5"
+                - 'button "卡其 #C3A784" [ref=e83] [cursor=pointer]':
+                  - generic: "卡其 #C3A784"
+                - 'button "驼色 #A47E5B" [ref=e84] [cursor=pointer]':
+                  - generic: "驼色 #A47E5B"
+                - 'button "咖啡 #6F4E37" [ref=e85] [cursor=pointer]':
+                  - generic: "咖啡 #6F4E37"
+                - 'button "焦糖 #9C5A2C" [ref=e86] [cursor=pointer]':
+                  - generic: "焦糖 #9C5A2C"
+                - 'button "砖红 #C04A2F" [ref=e87] [cursor=pointer]':
+                  - generic: "砖红 #C04A2F"
+                - 'button "酒红 #7A1F2B ✓" [ref=e88] [cursor=pointer]':
+                  - generic: "酒红 #7A1F2B"
+                  - text: ✓
+                - 'button "樱粉 #F2B5C1" [ref=e89] [cursor=pointer]':
+                  - generic: "樱粉 #F2B5C1"
+                - 'button "胭脂 #D8576A" [ref=e90] [cursor=pointer]':
+                  - generic: "胭脂 #D8576A"
+                - 'button "珊瑚 #FF7F66" [ref=e91] [cursor=pointer]':
+                  - generic: "珊瑚 #FF7F66"
+                - 'button "橘黄 #F2A03D" [ref=e92] [cursor=pointer]':
+                  - generic: "橘黄 #F2A03D"
+                - 'button "柠檬黄 #FFE16B" [ref=e93] [cursor=pointer]':
+                  - generic: "柠檬黄 #FFE16B"
+                - 'button "草绿 #7CB342" [ref=e94] [cursor=pointer]':
+                  - generic: "草绿 #7CB342"
+                - 'button "橄榄 #708238" [ref=e95] [cursor=pointer]':
+                  - generic: "橄榄 #708238"
+                - 'button "墨绿 #1E5631" [ref=e96] [cursor=pointer]':
+                  - generic: "墨绿 #1E5631"
+                - 'button "薄荷 #A8E6CF" [ref=e97] [cursor=pointer]':
+                  - generic: "薄荷 #A8E6CF"
+                - 'button "天蓝 #6FB7E8" [ref=e98] [cursor=pointer]':
+                  - generic: "天蓝 #6FB7E8"
+                - 'button "宝蓝 #1F4E79" [ref=e99] [cursor=pointer]':
+                  - generic: "宝蓝 #1F4E79"
+                - 'button "藏青 #1A2A47" [ref=e100] [cursor=pointer]':
+                  - generic: "藏青 #1A2A47"
+                - 'button "牛仔 #3D5A80" [ref=e101] [cursor=pointer]':
+                  - generic: "牛仔 #3D5A80"
+                - 'button "雾紫 #B8A9D4" [ref=e102] [cursor=pointer]':
+                  - generic: "雾紫 #B8A9D4"
+                - 'button "葡萄 #5C2A4C" [ref=e103] [cursor=pointer]':
+                  - generic: "葡萄 #5C2A4C"
+                - 'button "银灰 #B8B8B8" [ref=e104] [cursor=pointer]':
+                  - generic: "银灰 #B8B8B8"
+                - 'button "炭灰 #4A4A4A" [ref=e105] [cursor=pointer]':
+                  - generic: "炭灰 #4A4A4A"
+                - 'button "奶咖 #D9C5A8" [ref=e106] [cursor=pointer]':
+                  - generic: "奶咖 #D9C5A8"
+                - 'button "豆沙 #B58A8A" [ref=e107] [cursor=pointer]':
+                  - generic: "豆沙 #B58A8A"
+                - 'button "抹茶 #B8C9A0" [ref=e108] [cursor=pointer]':
+                  - generic: "抹茶 #B8C9A0"
+                - 'button "雾蓝 #A8C0D6" [ref=e109] [cursor=pointer]':
+                  - generic: "雾蓝 #A8C0D6"
+          - generic [ref=e110]:
+            - textbox "描述你想要生成的图片，例如：护肤品礼盒，白色背景，柔和摄影棚灯光，高级电商主图" [ref=e111]: "将指定图案和 Pantone 色号应用到参考产品上，保持产品形状、材质和真实光影，生成可展示的产品效果图。颜色准确，图案贴合产品表面，不变形。，酒红 #7A1F2B"
+            - generic [ref=e112]:
+              - button "随机灵感" [ref=e113] [cursor=pointer]:
+                - img [ref=e114]
+                - text: 随机灵感
+              - button "清空" [ref=e119] [cursor=pointer]:
+                - img [ref=e120]
+                - text: 清空
+          - generic [ref=e123]:
+            - generic [ref=e124]: 快捷风格
+            - generic [ref=e125]:
+              - button "电商主图" [ref=e126] [cursor=pointer]
+              - button "模特图" [ref=e127] [cursor=pointer]
+              - button "场景图" [ref=e128] [cursor=pointer]
+              - button "透明背景" [ref=e129] [cursor=pointer]
+          - generic [ref=e130]:
+            - generic [ref=e131]: 模型
+            - button "即梦 jimeng-5.0" [ref=e133] [cursor=pointer]:
+              - generic [ref=e134]: 即梦
+              - generic [ref=e135]: jimeng-5.0
+            - generic [ref=e136]:
+              - generic [ref=e137]: 当前模型：即梦 · 未配置 Key
+              - link "配置模型" [ref=e138] [cursor=pointer]:
+                - /url: /pages/settings.html#image-models-jimeng
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - generic [ref=e141]:
+                - generic [ref=e142]: 图片比例
+                - generic [ref=e143]:
+                  - button "1:1" [ref=e144] [cursor=pointer]
+                  - button "4:3" [ref=e145] [cursor=pointer]
+                  - button "16:9" [ref=e146] [cursor=pointer]
+                  - button "9:16" [ref=e147] [cursor=pointer]
+              - generic [ref=e148]:
+                - generic [ref=e149]: 生成数量
+                - generic [ref=e150]:
+                  - button "1" [ref=e151] [cursor=pointer]
+                  - button "2" [ref=e152] [cursor=pointer]
+                  - button "4" [ref=e153] [cursor=pointer]
+            - button "开始生成 2 张图" [ref=e154] [cursor=pointer]:
+              - img [ref=e155]
+              - generic [ref=e157]: 开始生成
+              - generic [ref=e158]: 2 张图
+      - generic [ref=e159]:
+        - generic [ref=e160]:
+          - generic [ref=e161]:
+            - img [ref=e163]
+            - generic [ref=e167]: 生成的图片将在这里显示
+            - generic [ref=e168]:
+              - generic [ref=e169]: 输入描述后点击生成
+              - img [ref=e170]
+          - generic [ref=e172]: 文生图 · 即梦 · 16:9 · 2张
+        - button "历史" [ref=e173] [cursor=pointer]:
+          - img [ref=e174]
+          - generic [ref=e176]: 历史

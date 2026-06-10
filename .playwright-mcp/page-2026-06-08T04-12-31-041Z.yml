@@ -1,0 +1,95 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - link [ref=e3] [cursor=pointer]:
+      - /url: /pages/index.html
+      - img [ref=e4]
+    - link "做视频" [ref=e5] [cursor=pointer]:
+      - /url: /pages/agent.html
+      - img [ref=e6]
+      - generic: 做视频
+    - link "做图片" [ref=e10] [cursor=pointer]:
+      - /url: /pages/image-editor.html
+      - img [ref=e11]
+      - generic: 做图片
+    - link "去分发" [ref=e15] [cursor=pointer]:
+      - /url: /pages/distribute.html
+      - img [ref=e16]
+      - generic: 去分发
+    - link "设置" [ref=e18] [cursor=pointer]:
+      - /url: /pages/settings.html
+      - img [ref=e19]
+      - generic: 设置
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - img "NextGen" [ref=e25]
+        - generic [ref=e26]: NEXTGEN Studio
+        - text: 本机部署版
+      - generic [ref=e28]:
+        - heading "AI 电商内容工作台" [level=1] [ref=e29]
+        - paragraph [ref=e30]: 在本机完成商品图生成、短视频制作和多平台分发，素材与模型配置统一沉淀。
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - strong [ref=e33]: "3"
+            - text: 核心工作流
+          - generic [ref=e34]:
+            - strong [ref=e35]: 本机
+            - text: 资产留存
+          - generic [ref=e36]:
+            - strong [ref=e37]: 统一
+            - text: 模型中心
+      - generic [ref=e39]:
+        - heading "选择工作流" [level=2] [ref=e40]
+        - paragraph [ref=e41]: 从内容生产到分发，按当前任务进入对应工具。
+      - generic [ref=e42]:
+        - link "STEP 01 做视频 商品短视频 · 直播切片 · AI 自动生成 进入" [ref=e43] [cursor=pointer]:
+          - /url: /pages/agent.html
+          - img [ref=e45]
+          - heading "STEP 01 做视频" [level=3] [ref=e49]
+          - generic [ref=e50]: 商品短视频 · 直播切片 · AI 自动生成
+          - generic [ref=e51]: 进入
+        - link "STEP 02 做图片 主图 · 详情图 · 白底图 · AI 商品图 进入" [ref=e52] [cursor=pointer]:
+          - /url: /pages/image-editor.html
+          - img [ref=e54]
+          - heading "STEP 02 做图片" [level=3] [ref=e58]
+          - generic [ref=e59]: 主图 · 详情图 · 白底图 · AI 商品图
+          - generic [ref=e60]: 进入
+        - link "STEP 03 去分发 小红书 · 抖音 · 快手 · 一键多平台 进入" [ref=e61] [cursor=pointer]:
+          - /url: /pages/distribute.html
+          - img [ref=e63]
+          - heading "STEP 03 去分发" [level=3] [ref=e66]
+          - generic [ref=e67]: 小红书 · 抖音 · 快手 · 一键多平台
+          - generic [ref=e68]: 进入
+      - generic [ref=e69]:
+        - heading "我的素材库" [level=2] [ref=e70]:
+          - img [ref=e71]
+          - text: 我的素材库
+        - generic [ref=e76]:
+          - img [ref=e77]
+          - paragraph [ref=e81]: 还没有素材，开始你的第一条 AI 创作吧
+          - generic [ref=e82]:
+            - link "立即做图" [ref=e83] [cursor=pointer]:
+              - /url: /pages/image-editor.html
+            - link "立即做视频" [ref=e84] [cursor=pointer]:
+              - /url: /pages/agent.html
+      - generic [ref=e85]:
+        - heading "快速开始，选一个模板" [level=2] [ref=e86]
+        - generic [ref=e87]:
+          - generic [ref=e88] [cursor=pointer]:
+            - img [ref=e89]
+            - generic [ref=e90]:
+              - text: 热门
+              - strong [ref=e91]: 女装新品发布 · 通勤穿搭
+              - generic [ref=e92]: 面料氛围感 + 城市街拍，15秒抓住眼球
+          - generic [ref=e93] [cursor=pointer]:
+            - img [ref=e94]
+            - generic [ref=e95]:
+              - text: 细节
+              - strong [ref=e96]: 跑鞋材质特写 · 科技感大片
+              - generic [ref=e97]: 微距镜头推进，鞋底黑科技一览无余
+          - generic [ref=e98] [cursor=pointer]:
+            - img [ref=e99]
+            - generic [ref=e100]:
+              - text: 社媒
+              - strong [ref=e101]: 快节奏投放短片 · 高转化
+              - generic [ref=e102]: 3秒抓住注意力，卖点密集输出促成交

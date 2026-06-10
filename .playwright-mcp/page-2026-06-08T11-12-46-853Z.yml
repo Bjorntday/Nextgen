@@ -1,0 +1,120 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - link "NextGen" [ref=e3] [cursor=pointer]:
+      - /url: /pages/index.html
+      - img "NextGen" [ref=e4]
+    - link "做视频" [ref=e5] [cursor=pointer]:
+      - /url: /pages/agent.html
+      - img [ref=e6]
+      - generic: 做视频
+    - link "做图片" [ref=e10] [cursor=pointer]:
+      - /url: /pages/image-editor.html
+      - img [ref=e11]
+      - generic: 做图片
+    - link "去分发" [ref=e15] [cursor=pointer]:
+      - /url: /pages/distribute.html
+      - img [ref=e16]
+      - generic: 去分发
+    - link "设置" [ref=e18] [cursor=pointer]:
+      - /url: /pages/settings.html
+      - img [ref=e19]
+      - generic: 设置
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - img "NextGen" [ref=e25]
+        - generic [ref=e26]:
+          - strong [ref=e27]: NEXTGEN
+          - generic [ref=e28]: Image Studio
+      - generic [ref=e29]:
+        - button "AI 生图" [ref=e30] [cursor=pointer]
+        - button "图片调整" [ref=e31] [cursor=pointer]
+      - link "返回首页" [ref=e33] [cursor=pointer]:
+        - /url: /pages/index.html
+    - generic [ref=e34]:
+      - complementary [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: AI IMAGE
+            - heading "AI 图片生成" [level=1] [ref=e39]
+            - paragraph [ref=e40]: 输入想法，生成电商素材。
+          - generic [ref=e41]:
+            - button "文生图" [ref=e42] [cursor=pointer]
+            - button "图生图" [ref=e43] [cursor=pointer]
+            - button "局部重绘" [ref=e44] [cursor=pointer]
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e47]: 外贸商品工作流
+              - generic [ref=e48]: 拍照 · 提案 · 报价资料
+            - tablist "外贸商品工作流" [ref=e49]:
+              - button "□ 高清扣图" [ref=e50] [cursor=pointer]:
+                - generic [ref=e51]: □
+                - generic [ref=e52]: 高清扣图
+              - button "◇ 产品裂变" [ref=e53] [cursor=pointer]:
+                - generic [ref=e54]: ◇
+                - generic [ref=e55]: 产品裂变
+              - button "◎ 图案色号应用" [ref=e56] [cursor=pointer]:
+                - generic [ref=e57]: ◎
+                - generic [ref=e58]: 图案色号应用
+            - generic [ref=e59]:
+              - strong [ref=e60]: AI 高清扣图 + 批量整理 + Excel 导出
+              - paragraph [ref=e61]: 适合外贸报价、工厂推广和电商运营。先把随手拍产品图处理成干净主图，再整理成可导出的资料。
+              - generic [ref=e62]:
+                - button "套用模板" [ref=e63] [cursor=pointer]
+                - button "上传产品图" [ref=e64] [cursor=pointer]
+          - generic [ref=e65]:
+            - textbox "描述你想要生成的图片，例如：护肤品礼盒，白色背景，柔和摄影棚灯光，高级电商主图" [ref=e66]
+            - generic [ref=e67]:
+              - button "随机灵感" [ref=e68] [cursor=pointer]:
+                - img [ref=e69]
+                - text: 随机灵感
+              - button "清空" [ref=e74] [cursor=pointer]:
+                - img [ref=e75]
+                - text: 清空
+          - generic [ref=e78]:
+            - generic [ref=e79]: 快捷风格
+            - generic [ref=e80]:
+              - button "电商主图" [ref=e81] [cursor=pointer]
+              - button "模特图" [ref=e82] [cursor=pointer]
+              - button "场景图" [ref=e83] [cursor=pointer]
+              - button "透明背景" [ref=e84] [cursor=pointer]
+          - generic [ref=e85]:
+            - generic [ref=e86]: 模型
+            - button "即梦 jimeng-5.0" [ref=e88] [cursor=pointer]:
+              - generic [ref=e89]: 即梦
+              - generic [ref=e90]: jimeng-5.0
+            - generic [ref=e91]:
+              - generic [ref=e92]: 当前模型：即梦 · 未配置 Key
+              - link "配置模型" [ref=e93] [cursor=pointer]:
+                - /url: /pages/settings.html#image-models-jimeng
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - generic [ref=e97]: 图片比例
+                - generic [ref=e98]:
+                  - button "1:1" [ref=e99] [cursor=pointer]
+                  - button "4:3" [ref=e100] [cursor=pointer]
+                  - button "16:9" [ref=e101] [cursor=pointer]
+                  - button "9:16" [ref=e102] [cursor=pointer]
+              - generic [ref=e103]:
+                - generic [ref=e104]: 生成数量
+                - generic [ref=e105]:
+                  - button "1" [ref=e106] [cursor=pointer]
+                  - button "2" [ref=e107] [cursor=pointer]
+                  - button "4" [ref=e108] [cursor=pointer]
+            - button "开始生成 2 张图" [ref=e109] [cursor=pointer]:
+              - img [ref=e110]
+              - generic [ref=e112]: 开始生成
+              - generic [ref=e113]: 2 张图
+      - generic [ref=e114]:
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - img [ref=e118]
+            - generic [ref=e122]: 生成的图片将在这里显示
+            - generic [ref=e123]:
+              - generic [ref=e124]: 输入描述后点击生成
+              - img [ref=e125]
+          - generic [ref=e127]: 文生图 · 即梦 · 16:9 · 2张
+        - button "历史" [ref=e128] [cursor=pointer]:
+          - img [ref=e129]
+          - generic [ref=e131]: 历史

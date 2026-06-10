@@ -205,7 +205,12 @@ def _validate_platform_payload(platform_id: str, payload: dict) -> list[dict]:
 
 def _job_not_found(json_error):
     if json_error:
-        return json_error("job_not_found", "发布任务不存在。", status=404)
+        return json_error(
+            "发布任务不存在。",
+            404,
+            recovery_suggestion="Check the job_id or list jobs with GET /api/distribution/jobs.",
+            error_code="JOB_NOT_FOUND",
+        )
     return {"ok": False, "error": "job_not_found"}, 404
 
 

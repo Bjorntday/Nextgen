@@ -1,3 +1,5 @@
+import { loadRefImageList, saveRefImageList } from '../modules/image-editor/ref-storage.js';
+
 /**
  * NextGen Image Studio - 完整JS逻辑
  * 文生图 / 图生图 / 局部重绘 / 图片调整 / 历史记录
@@ -15,8 +17,11 @@
     workflowMode: false,
     model: 'jimeng',
     style: '',
-    // Reference images: an array of { name, dataUrl, mime }
+    // Reference images are isolated by feature group:
+    // baseRefImages = 文生图/图生图/局部重绘基础能力；workflowRefImages = 外贸商品工作流。
     // Backward-compat: refImage / refImageName are still read for legacy localStorage.
+    baseRefImages: [],
+    workflowRefImages: [],
     refImages: [],
     refImage: null,            // legacy single-image field (deprecated, kept for restore compat)
     refImageName: '',
@@ -31,6 +36,29 @@
     modalImageUrl: null,
     maskCanvasReady: false,
   };
+
+  function getActiveRefStore() {
+    return state.workflowMode ? state.workflowRefImages : state.baseRefImages;
+  }
+
+  function syncLegacyRefFields(items = getActiveRefStore()) {
+    state.refImages = items || [];
+    state.refImage = state.refImages[0]?.dataUrl || null;
+    state.refImageName = state.refImages[0]?.name || '';
+  }
+
+  function syncActiveRefImages() {
+    syncLegacyRefFields(getActiveRefStore());
+  }
+
+  function commitActiveRefImages(items = state.refImages || []) {
+    if (state.workflowMode) {
+      state.workflowRefImages = items;
+    } else {
+      state.baseRefImages = items;
+    }
+    syncLegacyRefFields(items);
+  }
 
   // ========== 初始化 ==========
   function init() {
@@ -157,6 +185,7 @@
     return {
       key: custom.key || '',
       model: custom.model || '',
+      edit_model: custom.edit_model || custom.image_model || '',
       endpoint: custom.endpoint || '',
       api_base: custom.endpoint || '',
       custom: true,
@@ -164,6 +193,7 @@
   }
 
   function getGenerationSourceImages() {
+    syncActiveRefImages();
     if (state.mode === 'img2img') {
       const items = (state.refImages || []).map((it) => it && it.dataUrl).filter(Boolean);
       return items.length ? items : (state.refImage ? [state.refImage] : []);
@@ -173,6 +203,11 @@
       return current && current.url ? [current.url] : [];
     }
     return [];
+  }
+
+  function getProductRefImages() {
+    syncActiveRefImages();
+    return (state.refImages || []).filter((it) => it && it.dataUrl && !it.isSwatch);
   }
 
   function getWorkflowHistoryLabel() {
@@ -195,9 +230,24 @@
     try {
       const saved = getSavedApiConfig();
       providerConfig = getImageProviderConfig(saved, activeProvider);
-      if (providerConfig && providerConfig.model) activeModel = providerConfig.model;
+      if (providerConfig && (providerConfig.model || providerConfig.edit_model)) {
+        activeModel = getProviderModelForMode(providerConfig, state.mode);
+      }
     } catch(e) {}
     return { activeProvider, activeModel, providerConfig };
+  }
+
+  function resolveImageModelForMode(model, mode = state.mode) {
+    const m = String(model || '').trim();
+    return mode !== 'txt2img' && m.toLowerCase().endsWith('-vip') ? m.slice(0, -4) : m;
+  }
+
+  function getProviderModelForMode(providerConfig, mode = state.mode) {
+    const baseModel = providerConfig && providerConfig.model ? providerConfig.model : '';
+    if (mode !== 'txt2img' && providerConfig && providerConfig.edit_model) {
+      return providerConfig.edit_model;
+    }
+    return resolveImageModelForMode(baseModel, mode);
   }
 
   async function generateWithConfiguredApi({ provider, model, endpoint, key, prompt, mode, count, images, mask, ratio }) {
@@ -230,7 +280,8 @@
     }
     const resultImages = Array.isArray(data.images) ? data.images : [];
     if (!resultImages.length) throw new Error('接口没有返回图片结果');
-    return resultImages.map((img, index) => ({ url: img.url || img.data_url, index, provider, model }));
+    const resolvedModel = data.model || resolveImageModelForMode(model, body.mode);
+    return resultImages.map((img, index) => ({ url: img.url || img.data_url, index, provider, model: resolvedModel }));
   }
 
   function loadModelChips() {
@@ -305,8 +356,10 @@
         state.mode = btn.dataset.mode;
         state.workflowMode = false;
         $$('.workflow-tab').forEach((b) => b.classList.remove('active'));
+        syncActiveRefImages();
         restoreBasePrompt();
         updateModeUI();
+        renderRefGrid();
         updateWorkflowPanelVisibility();
         updateCanvasStatus();
       });
@@ -345,22 +398,24 @@
     }
 
     updateEmptyStateText();
+    updatePromptPlaceholder();
     updateGenHint();
+    updateModelStatus();
     updateCanvasStatus();
   }
 
   const TRADE_WORKFLOWS = {
     cutout: {
-      mode: 'inpaint',
+      mode: 'img2img',
       title: 'AI 高清扣图 + 批量整理 + Excel 导出',
       desc: '适合外贸报价、工厂推广和电商运营。先把随手拍产品图处理成干净主图，再整理成可导出的资料。',
-      prompt: '把上传的产品照片处理成专业电商主图：主体高清保留，去除杂乱背景，白色或透明干净背景，边缘清晰，阴影自然，适合报价单和产品资料导出。',
+      prompt: '只对上传的产品照片做背景抠除和背景整理：商品主体必须与原图一致，不重新设计、不改变形状、颜色、材质、纹理、比例、角度和细节。',
     },
     variants: {
       mode: 'img2img',
       title: '外贸产品裂变：1 个爆款延伸多款新品',
       desc: '适合新品开发、客户提案和电商上新。基于一个爆款，按元素、图案、配色方向快速扩展多款方案。',
-      prompt: '基于参考产品做外贸新品系列裂变：保留原产品结构和卖点，延伸 20 款不同图案、配色和主题方向，输出成一组可提案的新款产品方案，风格统一且有差异。',
+      prompt: '基于参考产品做同一母款的系列化变体：必须保留产品品类、轮廓、结构、比例、角度和核心卖点，只在指定方向做可生产的小幅变化。',
     },
     apply: {
       mode: 'img2img',
@@ -385,27 +440,46 @@
   }
 
   function buildWorkflowPrompt() {
+    syncActiveRefImages();
     const key = getActiveWorkflowKey();
     if (key === 'cutout') {
       const bg = labelFromSelect('cutoutBg') || '纯白';
       const edge = labelFromSelect('cutoutEdge') || '干净硬边';
       const batch = labelFromSelect('cutoutBatch') || '每张单独';
       return [
-        '将上传的商品图片处理成专业电商主图。',
+        '这是商品抠图 / 背景清理任务，不是重新生成商品。',
+        '请以上传图片中的商品为唯一主体，只移除或替换背景。',
         `背景方案：${bg}；边缘处理：${edge}；批量策略：${batch}。`,
-        '要求保留商品主体真实结构、材质、颜色和细节，去除杂乱背景，边缘清晰自然，阴影真实，适合外贸报价单、商品资料和平台主图使用。',
-        '不要改变商品品类，不要生成多余元素，不要加入文字、水印或品牌标识。'
+        '必须严格保持商品主体与原图一致：形状、轮廓、颜色、材质、纹理、图案、文字、配件、比例、透视角度、摆放姿态和局部细节都不要改变。',
+        '只允许处理商品外部背景和边缘过渡；可以补干净背景、自然阴影或透明底，但不能重绘、改款、扩写、替换、简化或美化商品本体。',
+        '不要新增道具、场景、文字、水印、标签、Logo 或装饰元素；不要改变商品品类；不要改变构图主体位置。'
       ].join('');
     }
     if (key === 'variants') {
       const count = getFieldValue('variantsCount', '8');
       const axis = labelFromSelect('variantsAxis') || '混合方向';
       const strength = labelFromSelect('variantsStrength') || '中等发散';
+      const axisRules = {
+        color: '只改变配色方案，不改变图案、结构、材质、轮廓、比例、角度和功能部件。',
+        pattern: '只改变表面图案 / 印花 / 局部装饰，不改变产品结构、材质、轮廓、比例、角度和基础配色关系。',
+        mixed: '可以在配色、图案和局部装饰上做组合变化，但必须保持同一母款、同一结构、同一品类和同一产品识别度。',
+      };
+      const strengthRules = {
+        subtle: '变化幅度保守，像同一款产品的不同色号或轻微图案版本。',
+        medium: '变化幅度中等，像同一系列里的不同 SKU，差异清晰但仍然一眼看出是同一母款。',
+        wild: '变化幅度可以更明显，但仍不能改变商品大类、结构轮廓、功能部件和可生产逻辑。',
+      };
+      const axisKey = getFieldValue('variantsAxis', 'mixed');
+      const strengthKey = getFieldValue('variantsStrength', 'medium');
       return [
-        `基于上传的参考商品生成 ${count} 个外贸新品裂变方案。`,
+        '这是产品系列裂变任务，不是重新设计一个全新商品。',
+        '请把上传图片中的商品作为“母款”，保持它的品类、轮廓、结构、比例、角度、材质逻辑、核心卖点和商业可生产感。',
+        `输出一张整齐的系列方案图，画面中展示 ${count} 个同一母款的变体 SKU。`,
         `变化方向：${axis}；风格强度：${strength}。`,
-        '保留原商品的核心结构、功能卖点、材质逻辑和商业可生产感，在图案、配色、主题、局部装饰或系列化风格上做差异化延展。',
-        '输出应像一组可给客户提案的新款产品效果图，风格统一但每款有清晰区别；不要改变商品大类，不要生成无关场景或文字。'
+        axisRules[axisKey] || axisRules.mixed,
+        strengthRules[strengthKey] || strengthRules.medium,
+        '每个变体之间要有可辨识差异，但必须像同一个产品系列；不要改变商品大类，不要改成其他物品，不要增加无关场景、模特、文字、水印、Logo 或复杂背景。',
+        '构图要求：干净背景，多个变体有序排列，方便客户对比选款。'
       ].join('');
     }
     const hex = (document.getElementById('colorActiveHex')?.value || colorPanelState.active?.hex || '').trim();
@@ -440,6 +514,27 @@
     try { localStorage.setItem(WORKFLOW_PROMPT_LS_KEY, prompt); } catch (_e) {}
   }
 
+  function selectImageMode(mode) {
+    const modeTab = document.querySelector('.mode-tab[data-mode="' + mode + '"]');
+    if (modeTab) {
+      $$('.mode-tab').forEach((b) => b.classList.remove('active'));
+      modeTab.classList.add('active');
+    }
+    state.mode = mode;
+    updateModeUI();
+  }
+
+  function removeInjectedColorSwatches() {
+    syncActiveRefImages();
+    const before = (state.refImages || []).length;
+    state.refImages = (state.refImages || []).filter((it) => !(it && it.isSwatch));
+    if (state.refImages.length !== before) {
+      commitActiveRefImages(state.refImages);
+      renderRefGrid();
+      persistRefImages();
+    }
+  }
+
   function initTradeWorkflow() {
     const root = $('#tradeWorkflow');
     if (!root) return;
@@ -449,6 +544,8 @@
     function activate(key, applyPrompt = false) {
       const cfg = TRADE_WORKFLOWS[key] || TRADE_WORKFLOWS.cutout;
       state.workflowMode = true;
+      syncActiveRefImages();
+      if (key !== 'apply') removeInjectedColorSwatches();
       $$('.workflow-tab').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.workflow === key);
       });
@@ -456,16 +553,17 @@
       if (descNode) descNode.textContent = cfg.desc;
       try { localStorage.setItem(WORKFLOW_LS_KEY, key); } catch (_e) {}
       try { updateWorkflowPanelVisibility(); } catch (_e) {}
+      renderRefGrid();
       syncWorkflowPrompt();
       if (!applyPrompt) return;
 
-      const modeTab = document.querySelector('.mode-tab[data-mode="' + cfg.mode + '"]');
-      if (modeTab) modeTab.click();
+      selectImageMode(cfg.mode);
       state.workflowMode = true;
       $$('.workflow-tab').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.workflow === key);
       });
       updateWorkflowPanelVisibility();
+      renderRefGrid();
       syncWorkflowPrompt();
       updateGenHint();
       updateCanvasStatus();
@@ -475,27 +573,25 @@
       btn.addEventListener('click', () => activate(btn.dataset.workflow, true));
     });
 
-    root.querySelector('[data-action="use-template"]')?.addEventListener('click', () => {
-      const active = root.querySelector('.workflow-tab.active');
-      activate(active?.dataset.workflow || 'cutout', true);
-    });
-
     root.querySelector('[data-action="need-ref"]')?.addEventListener('click', () => {
       const active = root.querySelector('.workflow-tab.active');
       const key = active?.dataset.workflow || 'cutout';
-      const mode = key === 'cutout' ? 'inpaint' : 'img2img';
-      const modeTab = document.querySelector('.mode-tab[data-mode="' + mode + '"]');
-      if (modeTab) modeTab.click();
+      const mode = 'img2img';
       state.workflowMode = true;
+      syncActiveRefImages();
+      if (key !== 'apply') removeInjectedColorSwatches();
+      selectImageMode(mode);
+      state.workflowMode = true;
+      syncActiveRefImages();
       $$('.workflow-tab').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.workflow === key);
       });
       updateWorkflowPanelVisibility();
+      renderRefGrid();
       syncWorkflowPrompt();
       updateGenHint();
       updateCanvasStatus();
-      if (mode === 'img2img') $('#refInput')?.click();
-      if (mode === 'inpaint') $('#imageInput')?.click();
+      $('#refInput')?.click();
     });
 
     root.querySelectorAll('.wf-panel select, .wf-panel input').forEach((control) => {
@@ -513,7 +609,9 @@
       }
     } catch (_e) {}
     state.workflowMode = false;
+    syncActiveRefImages();
     $$('.workflow-tab').forEach((btn) => btn.classList.remove('active'));
+    renderRefGrid();
     updateWorkflowPanelVisibility();
   }
 
@@ -688,9 +786,30 @@
     $$('.wf-panel').forEach((panel) => {
       panel.hidden = !state.workflowMode || panel.dataset.wf !== active;
     });
+    updateRefUploadCopy();
     const promptSection = document.querySelector('.prompt-section');
     if (promptSection) promptSection.hidden = !!state.workflowMode;
     updateColorPanelVisibility();
+  }
+
+  function updateRefUploadCopy() {
+    const title = document.querySelector('.ref-upload-title');
+    const hint = document.querySelector('.ref-upload-hint');
+    if (!title || !hint) return;
+    const active = state.workflowMode ? getActiveWorkflowKey() : '';
+    if (active === 'cutout') {
+      title.textContent = '上传产品图（可多选）';
+      hint.textContent = '支持 JPG / PNG / WebP · 高清扣图将逐张处理';
+    } else if (active === 'apply') {
+      title.textContent = '上传产品图 / 图案参考';
+      hint.textContent = '第 1 张为产品图，可继续添加图案或色号样板';
+    } else if (active === 'variants') {
+      title.textContent = '上传产品参考图（可多选）';
+      hint.textContent = '支持 JPG / PNG / WebP · 用于生成裂变方案';
+    } else {
+      title.textContent = '上传参考图（可多选）';
+      hint.textContent = '支持 JPG / PNG / WebP · 拖拽多张到此处';
+    }
   }
 
   function appendColorToPrompt() {
@@ -702,6 +821,8 @@
     // image (图 2 = 色号样板) BEFORE rebuilding the prompt, so the prompt
     // builder can see the swatch and switch to the multi-image wording.
     if (getActiveWorkflowKey() === 'apply') {
+      state.workflowMode = true;
+      syncActiveRefImages();
       const swatch = buildColorSwatchDataUrl(c.hex, c.name);
       if (swatch) injectColorSwatchAsRefImage(swatch, c);
     }
@@ -768,6 +889,7 @@
    */
   function injectColorSwatchAsRefImage(dataUrl, color) {
     if (!dataUrl) return;
+    syncActiveRefImages();
     const items = state.refImages = state.refImages || [];
     const tag = 'swatch:';
     // Remove any previously-injected swatches.
@@ -787,6 +909,7 @@
     else items.splice(1, 0, swatchItem);
     // Cap
     if (items.length > MAX_REF_IMAGES) items.length = MAX_REF_IMAGES;
+    commitActiveRefImages(items);
     try { renderRefGrid?.(); } catch (_e) {}
     try { persistRefImages?.(); } catch (_e) {}
   }
@@ -823,6 +946,7 @@
   function openColorPickModal() {
     const modal = $('#colorPickModal');
     if (!modal) return;
+    syncActiveRefImages();
     pickerModalState = { imageDataUrl: null, pendingHex: null, pendingCoord: null };
     // Show "从已上传参考图取色" only when ref image exists.
     const fromRefBtn = $('#colorPickFromRefBtn');
@@ -1089,6 +1213,7 @@
       e.target.value = '';
     });
     $('#colorPickFromRefBtn')?.addEventListener('click', () => {
+      syncActiveRefImages();
       if (state.refImage) loadImageIntoStage(state.refImage);
     });
     $('#colorPickNativeBtn')?.addEventListener('click', startNativeEyeDropper);
@@ -1132,8 +1257,8 @@
       emptyHintText.textContent = '输入描述后点击生成';
       if (emptyIcon) emptyIcon.innerHTML = '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>';
     } else if (state.mode === 'img2img') {
-      emptyTitle.textContent = '点击或拖拽上传图片';
-      emptyHintText.textContent = '或直接输入描述生成 AI 图片';
+      emptyTitle.textContent = state.workflowMode ? '上传产品图后开始处理' : '上传基础参考图';
+      emptyHintText.textContent = state.workflowMode ? '请使用左侧工作流的上传产品图' : '可多选参考图，生成结果将在这里显示';
       if (emptyIcon) emptyIcon.innerHTML = '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/>';
     } else if (state.mode === 'inpaint') {
       emptyTitle.textContent = '上传图片后涂抹区域';
@@ -1168,40 +1293,101 @@
   function restoreBasePrompt() {
     const promptInput = $('#promptInput');
     if (!promptInput) return;
+    const modeKey = `nextgen.imageEditor.basePrompt.${state.mode}`;
     try {
-      promptInput.value = localStorage.getItem(BASE_PROMPT_LS_KEY) || '';
+      const stored = localStorage.getItem(modeKey);
+      promptInput.value = stored !== null
+        ? stored
+        : (state.mode === 'txt2img' ? (localStorage.getItem(BASE_PROMPT_LS_KEY) || '') : '');
     } catch (_e) {
       promptInput.value = '';
     }
   }
 
-  function persistBasePrompt() {
+  function persistBasePrompt(mode = state.mode) {
     const promptInput = $('#promptInput');
     if (!promptInput) return;
+    const modeKey = `nextgen.imageEditor.basePrompt.${mode}`;
     try {
-      if (promptInput.value) localStorage.setItem(BASE_PROMPT_LS_KEY, promptInput.value);
-      else localStorage.removeItem(BASE_PROMPT_LS_KEY);
+      if (promptInput.value) localStorage.setItem(modeKey, promptInput.value);
+      else localStorage.removeItem(modeKey);
+      localStorage.removeItem(BASE_PROMPT_LS_KEY);
     } catch (_e) {}
+  }
+
+  const RANDOM_PROMPTS = {
+    txt2img: [
+      '一套高端护肤品礼盒，白色摄影棚背景，柔和顶光，玻璃瓶身通透，电商主图质感',
+      '户外露营保温杯产品海报，清晨自然光，草地和木桌场景，真实商业摄影',
+      '女士通勤手提包，浅灰背景，模特手持局部特写，皮革纹理清晰，高级品牌感',
+      '运动跑鞋悬浮展示，深色渐变背景，动感光轨，鞋面材质细节锐利',
+      '儿童玩具套装，明亮彩色背景，俯拍陈列，干净阴影，适合跨境电商详情页',
+      '咖啡机产品主图，不锈钢机身，厨房台面场景，暖色晨光，真实反射',
+      '无线耳机套装，极简科技风，浅蓝背景，产品悬浮排列，干净高光',
+      '宠物用品组合，白底电商陈列，柔和阴影，主体清晰，包装与实物同框',
+      '香薰蜡烛礼盒，暗调高级场景，火焰微光，木质桌面，生活方式摄影',
+      '户外太阳镜产品图，沙滩阳光场景，镜片反光自然，夏季广告氛围',
+      '不锈钢厨房刀具套装，黑色石纹背景，专业布光，锋利边缘清晰',
+      '瑜伽服套装，模特室内自然站姿，柔和窗光，面料弹性和纹理真实',
+    ],
+    img2img: [
+      '基于参考图优化成干净电商主图，保持商品结构和颜色不变，去除杂乱背景，增强材质细节和自然阴影',
+      '参考原图生成同款产品的高级摄影版本，保留主体比例和关键卖点，背景改为简洁影棚场景',
+      '将参考产品放入真实生活方式场景，保持产品外观一致，光影自然，适合详情页首图',
+      '根据参考图生成一张更适合外贸报价单的产品图，白底、高清、边缘干净、无水印',
+      '保留参考图商品主体，调整构图为居中展示，提升清晰度、对比度和商业质感',
+      '以参考图为基础生成同系列营销图，增加柔和背景和轻微景深，不改变商品设计',
+      '将参考产品转换为高级目录摄影风格，保持真实比例，突出材质纹理和工艺细节',
+      '参考图中的产品不变，替换为浅色渐变背景，加入自然落地阴影，适合平台主图',
+      '生成一张基于参考图的新品提案视觉，保持主体功能和结构，微调配色和陈列方式',
+      '将参考图做成社媒广告风格，产品清晰占画面主体，背景有轻微场景氛围但不喧宾夺主',
+      '基于参考图生成包装升级版本，保留产品品类和比例，提升画面整洁度和品牌感',
+      '把参考图优化为高清产品特写，突出纹理、边缘、透明/金属/皮革等材质细节',
+    ],
+    inpaint: [
+      '只修改涂抹区域，把瑕疵、污点和杂物自然移除，保持原图构图、光影、颜色和材质不变',
+      '将涂抹区域替换为干净白色背景，边缘自然融合，不影响商品主体和阴影',
+      '仅在涂抹区域添加柔和真实阴影，让商品落地更自然，其他区域保持原样',
+      '把涂抹区域的文字、水印或标签去除，补全周围纹理，画面看不出修补痕迹',
+      '只改变涂抹区域的颜色为更高级的中性色，保留原有纹理、褶皱、透视和光照',
+      '将涂抹区域替换成同材质的完整表面，纹理方向一致，接缝自然，不引入新元素',
+      '去除涂抹区域里的反光高亮或脏污，保留真实材质质感和整体明暗关系',
+      '把涂抹区域改成指定产品图案的干净延展，保持透视和贴合关系自然',
+      '仅重绘涂抹区域，让破损或遮挡部分恢复完整，其他所有内容保持不变',
+      '把涂抹区域背景整理得更平整干净，保留原来的空间透视和光线方向',
+      '对涂抹区域做局部精修，提高边缘清晰度和质感，不改变商品形状',
+      '将涂抹区域改成更适合电商展示的简洁材质背景，主体、阴影和色调保持一致',
+    ],
+  };
+
+  function getRandomPromptForMode(mode = state.mode) {
+    const prompts = RANDOM_PROMPTS[mode] || RANDOM_PROMPTS.txt2img;
+    return prompts[Math.floor(Math.random() * prompts.length)] || '';
+  }
+
+  function updatePromptPlaceholder() {
+    const promptInput = $('#promptInput');
+    if (!promptInput) return;
+    const placeholders = {
+      txt2img: '描述你想要生成的图片，例如：护肤品礼盒，白色背景，柔和摄影棚灯光，高级电商主图',
+      img2img: '描述要如何参考已上传图片，例如：保持商品结构不变，优化为白底高清电商主图',
+      inpaint: '描述涂抹区域要如何修改，例如：去除水印并自然补全背景，其他区域保持不变',
+    };
+    promptInput.placeholder = placeholders[state.mode] || placeholders.txt2img;
   }
 
   function initPromptInput() {
     const promptInput = $('#promptInput');
     // Restore last base prompt so page navigation/refresh doesn't wipe the user's text.
     restoreBasePrompt();
+    updatePromptPlaceholder();
     if (promptInput) {
       promptInput.addEventListener('input', () => {
         if (!state.workflowMode) persistBasePrompt();
       });
     }
     $('#randomBtn').addEventListener('click', () => {
-      const prompts = [
-        '精致礼盒包装，特写镜头，柔光箱照明，4K高清',
-        '女士手提包，模特场景，街拍风格，自然日光',
-        '运动跑鞋，产品特写，深色背景，专业运动摄影',
-        '护肤精华液，透明瓶身，实验室风格，简洁背景',
-        '茶叶包装，中国风，竹背景，传统工艺',
-      ];
-      const v = prompts[Math.floor(Math.random() * prompts.length)];
+      const v = getRandomPromptForMode(state.mode);
       promptInput.value = v;
       persistBasePrompt();
     });
@@ -1214,6 +1400,8 @@
 
   // ========== 参考图上传（支持多图） ==========
   const REF_IMAGES_LS_KEY = 'nextgen.imageEditor.refImages';
+  const BASE_REF_IMAGES_LS_KEY = 'nextgen.imageEditor.baseRefImages';
+  const WORKFLOW_REF_IMAGES_LS_KEY = 'nextgen.imageEditor.workflowRefImages';
   const REF_IMAGE_LS_KEY = 'nextgen.imageEditor.refImage';           // legacy
   const REF_IMAGE_NAME_LS_KEY = 'nextgen.imageEditor.refImageName'; // legacy
   const BASE_PROMPT_LS_KEY = 'nextgen.imageEditor.basePrompt';
@@ -1221,60 +1409,72 @@
   const WORKFLOW_LS_KEY = 'nextgen.imageEditor.workflow';
   const MAX_REF_IMAGES = 8;
 
-  function persistRefImages() {
-    try {
-      // Try persisting the full list; if too large, fall back to just the first image.
-      if (state.refImages && state.refImages.length) {
-        try {
-          localStorage.setItem(REF_IMAGES_LS_KEY, JSON.stringify(state.refImages));
-          localStorage.removeItem(REF_IMAGE_LS_KEY);
-          localStorage.removeItem(REF_IMAGE_NAME_LS_KEY);
-        } catch (quotaErr) {
-          localStorage.setItem(REF_IMAGE_LS_KEY, state.refImages[0].dataUrl);
-          localStorage.setItem(REF_IMAGE_NAME_LS_KEY, state.refImages[0].name);
-          localStorage.removeItem(REF_IMAGES_LS_KEY);
-        }
-      } else {
-        localStorage.removeItem(REF_IMAGES_LS_KEY);
-        localStorage.removeItem(REF_IMAGE_LS_KEY);
-        localStorage.removeItem(REF_IMAGE_NAME_LS_KEY);
-      }
-    } catch (_e) { /* ignore */ }
+  function normalizeRefImages(items) {
+    if (!Array.isArray(items)) return [];
+    return items
+      .filter((r) => r && r.dataUrl)
+      .slice(0, MAX_REF_IMAGES)
+      .map((r) => ({
+        name: r.name || 'image',
+        dataUrl: r.dataUrl,
+        mime: r.mime || guessMimeFromDataUrl(r.dataUrl),
+        isSwatch: !!(r.isSwatch || (r.name && String(r.name).startsWith('swatch:'))),
+      }));
   }
 
-  function restoreRefImages() {
+  function persistRefImages() {
+    commitActiveRefImages(state.refImages || []);
+    const base = normalizeRefImages(state.baseRefImages);
+    const workflow = normalizeRefImages(state.workflowRefImages);
+    Promise.all([
+      saveRefImageList(BASE_REF_IMAGES_LS_KEY, base, MAX_REF_IMAGES),
+      saveRefImageList(WORKFLOW_REF_IMAGES_LS_KEY, workflow, MAX_REF_IMAGES),
+    ]).catch(() => {});
     try {
-      let restored = null;
-      const rawMulti = localStorage.getItem(REF_IMAGES_LS_KEY);
-      if (rawMulti) {
-        const parsed = JSON.parse(rawMulti);
-        if (Array.isArray(parsed) && parsed.length) {
-          restored = parsed
-            .filter((r) => r && r.dataUrl)
-            .slice(0, MAX_REF_IMAGES)
-            .map((r) => ({ name: r.name || 'image', dataUrl: r.dataUrl, mime: r.mime || guessMimeFromDataUrl(r.dataUrl) }));
+      localStorage.removeItem(REF_IMAGES_LS_KEY);
+      localStorage.removeItem(BASE_REF_IMAGES_LS_KEY);
+      localStorage.removeItem(WORKFLOW_REF_IMAGES_LS_KEY);
+      localStorage.removeItem(REF_IMAGE_LS_KEY);
+      localStorage.removeItem(REF_IMAGE_NAME_LS_KEY);
+    } catch (_e) {}
+  }
+
+  async function restoreRefImages() {
+    try {
+      const parseList = (key) => {
+        const raw = localStorage.getItem(key);
+        if (!raw) return [];
+        return normalizeRefImages(JSON.parse(raw));
+      };
+      state.baseRefImages = await loadRefImageList(BASE_REF_IMAGES_LS_KEY, MAX_REF_IMAGES);
+      state.workflowRefImages = await loadRefImageList(WORKFLOW_REF_IMAGES_LS_KEY, MAX_REF_IMAGES);
+
+      if (!state.baseRefImages.length && !state.workflowRefImages.length) {
+        let legacy = [];
+        const legacyBase = parseList(BASE_REF_IMAGES_LS_KEY);
+        const legacyWorkflow = parseList(WORKFLOW_REF_IMAGES_LS_KEY);
+        if (legacyBase.length || legacyWorkflow.length) {
+          state.baseRefImages = legacyBase;
+          state.workflowRefImages = legacyWorkflow;
         }
-      } else {
-        const single = localStorage.getItem(REF_IMAGE_LS_KEY);
-        if (single) {
-          restored = [{
-            name: localStorage.getItem(REF_IMAGE_NAME_LS_KEY) || 'image',
-            dataUrl: single,
-            mime: guessMimeFromDataUrl(single),
-          }];
+        const rawMulti = localStorage.getItem(REF_IMAGES_LS_KEY);
+        if (!state.baseRefImages.length && !state.workflowRefImages.length) {
+          if (rawMulti) legacy = normalizeRefImages(JSON.parse(rawMulti));
+          const single = localStorage.getItem(REF_IMAGE_LS_KEY);
+          if (!legacy.length && single) {
+            legacy = normalizeRefImages([{
+              name: localStorage.getItem(REF_IMAGE_NAME_LS_KEY) || 'image',
+              dataUrl: single,
+              mime: guessMimeFromDataUrl(single),
+            }]);
+          }
+          // Legacy uploads used to be mostly workflow product references; keep
+          // them away from the base modes so 文生图/图生图/局部重绘 start clean.
+          state.workflowRefImages = legacy;
         }
       }
-    if (restored && restored.length) {
-      // Restore the `isSwatch` flag from the name prefix so reloads keep
-      // the swatch card distinguishable.
-      for (const r of restored) {
-        if (r && r.name && r.name.startsWith('swatch:')) r.isSwatch = true;
-      }
-      state.refImages = restored;
-      // Backward-compat: also keep the first image in the old fields.
-      state.refImage = restored[0].dataUrl;
-      state.refImageName = restored[0].name;
-    }
+      syncActiveRefImages();
+      persistRefImages();
     } catch (_e) { /* ignore */ }
   }
 
@@ -1284,6 +1484,7 @@
   }
 
   function renderRefGrid() {
+    syncActiveRefImages();
     const grid = $('#refGrid');
     const count = $('#refCount');
     const box = $('#refUploadBox');
@@ -1324,6 +1525,7 @@
 
   function appendRefFiles(files) {
     if (!files || !files.length) return;
+    syncActiveRefImages();
     const room = MAX_REF_IMAGES - state.refImages.length;
     const list = Array.from(files).slice(0, Math.max(0, room));
     let pending = list.length;
@@ -1339,8 +1541,7 @@
         pending -= 1;
         if (pending === 0) {
           // Keep legacy first-image field in sync.
-          state.refImage = state.refImages[0]?.dataUrl || null;
-          state.refImageName = state.refImages[0]?.name || '';
+          commitActiveRefImages(state.refImages);
           renderRefGrid();
           persistRefImages();
         }
@@ -1385,9 +1586,9 @@
       if (!btn) return;
       const idx = Number(btn.dataset.removeIndex);
       if (Number.isNaN(idx)) return;
+      syncActiveRefImages();
       state.refImages.splice(idx, 1);
-      state.refImage = state.refImages[0]?.dataUrl || null;
-      state.refImageName = state.refImages[0]?.name || '';
+      commitActiveRefImages(state.refImages);
       renderRefGrid();
       persistRefImages();
       // If we removed the swatch and the prompt was set to the multi-image
@@ -1397,17 +1598,17 @@
 
     // Clear all
     clearAll?.addEventListener('click', () => {
+      syncActiveRefImages();
       state.refImages = [];
-      state.refImage = null;
-      state.refImageName = '';
+      commitActiveRefImages(state.refImages);
       renderRefGrid();
       persistRefImages();
       try { syncWorkflowPrompt(); } catch (_e) {}
     });
 
-    // Restore from localStorage.
-    restoreRefImages();
-    renderRefGrid();
+    // Restore persisted refs asynchronously; IndexedDB is used to avoid
+    // localStorage quota failures with multi-image uploads.
+    restoreRefImages().finally(renderRefGrid);
   }
 
   // ========== 风格强度 ==========
@@ -1445,15 +1646,15 @@
           'remove-watermark': '去除水印和文字',
           'change-color': '调整颜色为更鲜艳的色彩',
         };
-        if (actionToPrompt[action]) {
-          $('#promptInput').value = actionToPrompt[action];
-          state.workflowMode = false;
-          $$('.workflow-tab').forEach((b) => b.classList.remove('active'));
-          persistBasePrompt();
-        }
+        state.workflowMode = false;
+        $$('.workflow-tab').forEach((b) => b.classList.remove('active'));
         $$('.mode-tab').forEach((b) => b.classList.remove('active'));
         $$('.mode-tab[data-mode="inpaint"]')[0].classList.add('active');
         state.mode = 'inpaint';
+        if (actionToPrompt[action]) {
+          $('#promptInput').value = actionToPrompt[action];
+          persistBasePrompt();
+        }
         updateModeUI();
         updateWorkflowPanelVisibility();
       });
@@ -1527,12 +1728,15 @@
       provider = getImageProviderConfig(cfg, state.model);
       hasKey = !!(provider && provider.key);
       const defaultImage = parseProviderModel(cfg.defaults && cfg.defaults.image, 'jimeng', 'jimeng-5.0');
-      modelName = provider && provider.model ? provider.model : (defaultImage.provider === state.model ? defaultImage.model : '');
+      modelName = provider ? getProviderModelForMode(provider, state.mode) : (defaultImage.provider === state.model ? defaultImage.model : '');
     } catch (e) { /* ignore */ }
     node.classList.toggle('ready', hasKey);
     node.classList.toggle('missing', !hasKey);
+    const configuredModel = provider && provider.model ? provider.model : modelName;
+    const displayModel = modelName;
+    const modeSuffix = hasKey && state.mode !== 'txt2img' && configuredModel && displayModel !== configuredModel ? '（图生图使用）' : '';
     node.querySelector('span').textContent = hasKey
-      ? `当前模型：${modelLabel} · ${modelName || '默认模型'}`
+      ? `当前模型：${modelLabel} · ${displayModel || '默认模型'}${modeSuffix}`
       : `当前模型：${modelLabel} · 未配置 Key`;
     const link = node.querySelector('a');
     if (link) link.href = provider && provider.custom ? '/pages/settings.html#custom-api' : `/pages/settings.html#image-models-${state.model}`;
@@ -1546,6 +1750,7 @@
   async function handleGenerate() {
     if (state.generating) return;
     if (state.workflowMode) syncWorkflowPrompt();
+    syncActiveRefImages();
     const prompt = state.workflowMode ? buildWorkflowPrompt().trim() : $('#promptInput').value.trim();
     if (!prompt && state.mode !== 'inpaint') {
       alert('请输入图片描述');
@@ -1553,6 +1758,10 @@
     }
     if (state.mode === 'img2img' && !(state.refImages && state.refImages.length)) {
       alert('请先上传参考图');
+      return;
+    }
+    if (state.workflowMode && getActiveWorkflowKey() === 'apply' && !getProductRefImages().length) {
+      alert('请先上传商品图，再应用色号或图案。色号样板图不能单独作为商品图生成。');
       return;
     }
     if (state.mode === 'inpaint' && !state.results.length) {
@@ -1592,9 +1801,15 @@
     $('#resultGrid').innerHTML = '';
     $('#genLoading').style.display = '';
     $('#progressBar').style.width = '10%';
-    const targetCount = state.mode === 'inpaint' ? 1 : Math.max(1, state.count || 1);
+    const targetCount = (state.mode === 'inpaint' || (state.workflowMode && getActiveWorkflowKey() === 'variants'))
+      ? 1
+      : Math.max(1, state.count || 1);
     const historyPrompt = state.workflowMode ? getWorkflowHistoryLabel() : prompt;
     const loadingText = $('#loadingText');
+    const updateProgressText = (index) => {
+      if (!loadingText) return;
+      loadingText.textContent = targetCount > 1 ? `AI 创作中...第 ${index + 1}/${targetCount} 张` : 'AI 创作中...';
+    };
 
     // 模拟进度
     let progress = 10;
@@ -1605,7 +1820,8 @@
 
     try {
       for (let i = 0; i < targetCount; i += 1) {
-        if (loadingText) loadingText.textContent = targetCount > 1 ? `AI 创作中…第 ${i + 1}/${targetCount} 张` : 'AI 创作中…';
+        updateProgressText(i);
+        if (i > 0) renderResults(state.results, { pending: true, pendingIndex: i, total: targetCount });
         const results = await generateWithConfiguredApi({
           provider: activeProvider,
           model: activeModel,
@@ -1617,7 +1833,9 @@
 
         results.forEach((r) => { r.prompt = historyPrompt; });
         $('#genLoading').style.display = 'none';
-        renderResults(state.results.concat(results));
+        const mergedResults = state.results.concat(results);
+        const hasMore = i + 1 < targetCount;
+        renderResults(mergedResults, hasMore ? { pending: true, pendingIndex: i + 1, total: targetCount } : {});
         saveToHistory(results, historyPrompt);
         $('#progressBar').style.width = Math.round(((i + 1) / targetCount) * 100) + '%';
       }
@@ -1634,7 +1852,7 @@
       state.generating = false;
       $('#genBtn').disabled = false;
       $('#genBtn').classList.remove('generating');
-      if (loadingText) loadingText.textContent = 'AI 创作中…';
+      if (loadingText) loadingText.textContent = 'AI 创作中...';
     }
   }
 
@@ -1650,7 +1868,7 @@
   }
 
   // ========== 结果渲染 ==========
-  function renderResults(results) {
+  function renderResults(results, options = {}) {
     state.results = results;
     state.currentIndex = 0;
     const grid = $('#resultGrid');
@@ -1665,8 +1883,7 @@
       item.innerHTML = `
         <img src="${escapeAttr(r.url)}" alt="结果${i + 1}" />
         <div class="result-actions">
-          <button data-action="upscale">U${i + 1}</button>
-          <button data-action="variant">V${i + 1}</button>
+          <button data-action="upscale" title="打开大图预览">查看大图</button>
           <button data-action="save">保存</button>
           <button data-action="download">下载</button>
         </div>
@@ -1677,9 +1894,6 @@
       item.querySelector('[data-action="upscale"]').addEventListener('click', () => {
         showModal(r.url);
       });
-      item.querySelector('[data-action="variant"]').addEventListener('click', () => {
-        makeVariant(r, i, item.querySelector('[data-action="variant"]'));
-      });
       item.querySelector('[data-action="save"]').addEventListener('click', () => {
         saveToHistory([r], r.prompt || getCurrentPromptLabel('保存结果'));
         toast('已保存到素材库');
@@ -1689,6 +1903,18 @@
       });
       grid.appendChild(item);
     });
+    if (options.pending) {
+      const pending = document.createElement('div');
+      pending.className = 'result-item result-pending';
+      pending.innerHTML = `
+        <div class="result-pending-body">
+          <div class="result-pending-spinner"></div>
+          <div class="result-pending-title">正在生成第 ${options.pendingIndex + 1}/${options.total} 张</div>
+          <div class="result-pending-sub">已生成的图片可以先查看，剩余结果会自动追加</div>
+        </div>
+      `;
+      grid.appendChild(pending);
+    }
   }
 
   function showPreview(url) {
@@ -1699,61 +1925,6 @@
     $('#previewWrap').style.display = '';
     $('#previewImg').src = url;
     updateEmptyStateText();
-  }
-
-  async function makeVariant(result, index, button) {
-    if (!result || !result.url) return;
-    const { activeProvider, activeModel, providerConfig } = resolveActiveImageConfig();
-    if (!providerConfig || !providerConfig.key) {
-      alert('当前图片模型未配置 API Key，请先到设置页保存 Key 后再生成变体。');
-      updateModelStatus();
-      return;
-    }
-    if (!providerConfig.endpoint && !providerConfig.api_base) {
-      alert('当前图片模型缺少 API 端点，无法生成变体。');
-      return;
-    }
-    if (!activeModel) {
-      alert('当前图片模型缺少模型名，无法生成变体。');
-      return;
-    }
-    const originalText = button ? button.textContent : '';
-    if (button) {
-      button.disabled = true;
-      button.textContent = '生成中';
-    }
-    try {
-      const basePrompt = result.prompt || getCurrentPromptLabel('基于当前图片生成一个相近但有差异的电商变体');
-      const variantPrompt = `${basePrompt}。基于这张结果图生成 1 张同系列变体，保持商品主体和商业质感，调整局部设计、配色或陈列细节，不要加入文字、水印或无关元素。`;
-      const generated = await generateWithConfiguredApi({
-        provider: activeProvider,
-        model: activeModel,
-        endpoint: providerConfig.api_base || providerConfig.endpoint,
-        key: providerConfig.key,
-        prompt: variantPrompt,
-        mode: 'img2img',
-        count: 1,
-        images: [result.url],
-      });
-      const variant = {
-        ...generated[0],
-        index: state.results.length,
-        parent: index,
-        prompt: `变体：${basePrompt}`,
-      };
-      state.results.splice(index + 1, 0, variant);
-      renderResults(state.results);
-      saveToHistory([variant], variant.prompt);
-      toast('变体已生成');
-    } catch (err) {
-      toast('变体生成失败：' + err.message, 6000);
-      alert('变体生成失败：' + err.message);
-    } finally {
-      if (button) {
-        button.disabled = false;
-        button.textContent = originalText;
-      }
-    }
   }
 
   function toast(message, duration = 1600) {
@@ -1795,19 +1966,24 @@
     const container = $('#previewContainer');
     const emptyState = $('#emptyState');
     const input = $('#imageInput');
-    const canUpload = () => {
+    const refInput = $('#refInput');
+    const getUploadTarget = () => {
       const activeTab = document.querySelector('.tab-btn.active');
-      return (activeTab && activeTab.dataset.tab === 'edit') || state.mode === 'img2img' || state.mode === 'inpaint';
+      if (activeTab && activeTab.dataset.tab === 'edit') return 'canvas';
+      if (state.workflowMode) return null;
+      if (state.mode === 'inpaint') return 'canvas';
+      if (state.mode === 'img2img') return 'ref';
+      return null;
     };
 
     emptyState.addEventListener('click', (e) => {
-      if (canUpload()) {
-        input.click();
-      }
+      const target = getUploadTarget();
+      if (target === 'canvas') input.click();
+      if (target === 'ref') refInput?.click();
     });
     container.addEventListener('dragover', (e) => {
       e.preventDefault();
-      if (canUpload()) {
+      if (getUploadTarget()) {
         emptyState.classList.add('dragover');
       }
     });
@@ -1817,9 +1993,13 @@
     container.addEventListener('drop', (e) => {
       e.preventDefault();
       emptyState.classList.remove('dragover');
-      if (canUpload()) {
+      const target = getUploadTarget();
+      if (target === 'canvas') {
         const file = e.dataTransfer.files[0];
         if (file && file.type.startsWith('image/')) loadImageToCanvas(file);
+      } else if (target === 'ref') {
+        const files = Array.from(e.dataTransfer.files || []).filter((file) => file.type.startsWith('image/'));
+        if (files.length) appendRefFiles(files);
       }
     });
     input.addEventListener('change', (e) => {
@@ -2028,6 +2208,8 @@
     try {
       const assets = JSON.parse(localStorage.getItem('nextgen_assets') || '[]');
       results.forEach((r) => {
+        const existed = assets.findIndex((item) => item && item.url === r.url);
+        if (existed >= 0) assets.splice(existed, 1);
         assets.unshift({
           type: 'image',
           url: r.url,

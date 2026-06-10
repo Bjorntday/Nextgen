@@ -33,6 +33,8 @@ pytestmark = pytest.mark.skipif(
 
 def _drawtext_available() -> bool:
     """Return True if this ffmpeg build includes the drawtext filter (requires libfreetype)."""
+    if shutil.which("ffmpeg") is None:
+        return False
     r = subprocess.run(
         ["ffmpeg", "-hide_banner", "-filters"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,

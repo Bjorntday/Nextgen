@@ -224,7 +224,14 @@ async function loadJobs() {
   renderQueue();
 }
 function loadAssets() {
-  const assets = [...safeJson('nextgen_assets', []), ...safeJson('nextgen_history', [])];
+  const seen = new Set();
+  const assets = [...safeJson('nextgen_assets', []), ...safeJson('nextgen_history', [])]
+    .filter((item) => {
+      const url = item && (item.url || item.video_url || item.src || '');
+      if (!url || seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    });
   state.assets = assets.slice(0, 30).map((item, i) => ({
     id: item.id || `asset_${i}`,
     type: item.type || (String(item.url || '').includes('video') ? 'video' : 'image'),

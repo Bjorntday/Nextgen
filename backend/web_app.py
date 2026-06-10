@@ -464,6 +464,71 @@ def api_health():
     })
 
 
+def _normalize_openai_compatible_base(endpoint: str) -> str:
+    """Return provider host/base without the OpenAI resource path."""
+    endpoint = str(endpoint or "").strip().rstrip("/")
+    lower = endpoint.lower()
+    for suffix in (
+        "/v1/images/generations",
+        "/v1/images/edits",
+        "/images/generations",
+        "/images/edits",
+        "/v1/models",
+        "/models",
+    ):
+        if lower.endswith(suffix):
+            return endpoint[:-len(suffix)]
+    if lower.endswith("/v1"):
+        return endpoint[:-3]
+    return endpoint
+
+
+def _is_gpt_image_2_family(model: str) -> bool:
+    return str(model or "").strip().lower().startswith("gpt-image-2")
+
+
+def _resolve_image_model_for_mode(model: str, mode: str) -> str:
+    """Use the configured model for text-to-image; strip -vip for edit APIs."""
+    model = str(model or "").strip()
+    if mode != "txt2img" and model.lower().endswith("-vip"):
+        return model[:-4]
+    return model
+
+
+def _resolve_image_size(model: str, mode: str, ratio: str, explicit_size: str = "") -> str:
+    explicit_size = str(explicit_size or "").strip()
+    if explicit_size:
+        return explicit_size
+    if _is_gpt_image_2_family(model):
+        return "1200x900" if mode == "txt2img" else "2049*3816"
+    return {
+        "1:1": "1024x1024",
+        "4:3": "1536x1024",   # ≈ 3:2 landscape, closest to 4:3
+        "3:2": "1536x1024",
+        "16:9": "1536x1024",  # closest landscape
+        "3:4": "1024x1536",   # ≈ 2:3 portrait
+        "2:3": "1024x1536",
+        "9:16": "1024x1536",  # closest portrait
+    }.get(ratio, "1024x1024")
+
+
+def _request_retry_without_env_proxy(requests_module, request_func, method: str, url: str, **kwargs):
+    """Retry once without env/system proxy if requests fails at the proxy layer."""
+    try:
+        return request_func(url, **kwargs)
+    except (
+        requests_module.exceptions.ProxyError,
+        requests_module.exceptions.ConnectionError,
+    ) as exc:
+        if not isinstance(exc, requests_module.exceptions.ProxyError):
+            detail = str(exc).lower()
+            if "proxy" not in detail and "tunnel" not in detail:
+                raise
+        session = requests_module.Session()
+        session.trust_env = False
+        return session.request(method, url, **kwargs)
+
+
 @app.post("/api/settings/test-openai-compatible")
 def api_test_openai_compatible_model():
     """Test an OpenAI-compatible model endpoint without exposing the key to browser CORS."""
@@ -481,11 +546,11 @@ def api_test_openai_compatible_model():
     if not endpoint.lower().startswith(("http://", "https://")):
         endpoint = "https://" + endpoint
     endpoint = endpoint.rstrip("/")
-    base = endpoint[:-3] if endpoint.lower().endswith("/v1") else endpoint
+    base = _normalize_openai_compatible_base(endpoint)
     url = f"{base}/v1/models"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     try:
-        resp = _requests.get(url, headers=headers, timeout=20)
+        resp = _request_retry_without_env_proxy(_requests, _requests.get, "GET", url, headers=headers, timeout=20)
         content_type = resp.headers.get("content-type", "")
         data = resp.json() if "json" in content_type.lower() else {"raw": resp.text[:500]}
         if not resp.ok:
@@ -493,7 +558,7 @@ def api_test_openai_compatible_model():
                 probe_results = []
                 for path in ("/v1/images/generations", "/v1/images/edits"):
                     probe_url = f"{base}{path}"
-                    probe = _requests.head(probe_url, headers=headers, timeout=20)
+                    probe = _request_retry_without_env_proxy(_requests, _requests.head, "HEAD", probe_url, headers=headers, timeout=20)
                     probe_results.append({"endpoint": probe_url, "status_code": probe.status_code})
                     if probe.status_code in {200, 204, 400, 405, 415, 422}:
                         return _jsonify({
@@ -548,6 +613,7 @@ def api_openai_compatible_image_generate():
     mode = str(payload.get("mode") or "txt2img").strip().lower()
     count = max(1, min(int(payload.get("count") or payload.get("n") or 1), 4))
     ratio = str(payload.get("ratio") or "1:1").strip()
+    quality = str(payload.get("quality") or "auto").strip()
 
     if not endpoint:
         return json_error("endpoint 不能为空", 400, error_code="MISSING_ENDPOINT")
@@ -561,19 +627,10 @@ def api_openai_compatible_image_generate():
         endpoint = "https://" + endpoint
 
     endpoint = endpoint.rstrip("/")
-    base = endpoint[:-3] if endpoint.lower().endswith("/v1") else endpoint
-    # OpenAI-compatible image APIs (DALL·E 3, gpt-image-1, and most OpenAI-shaped providers)
-    # support these standard sizes. We map every aspect ratio to the closest supported size;
-    # providers that only accept a subset will return their own error and we surface it.
-    size = {
-        "1:1": "1024x1024",
-        "4:3": "1536x1024",   # ≈ 3:2 landscape, closest to 4:3
-        "3:2": "1536x1024",
-        "16:9": "1536x1024",  # closest landscape
-        "3:4": "1024x1536",   # ≈ 2:3 portrait
-        "2:3": "1024x1536",
-        "9:16": "1024x1536",  # closest portrait
-    }.get(ratio, "1024x1024")
+    base = _normalize_openai_compatible_base(endpoint)
+    resolved_model = _resolve_image_model_for_mode(model, mode)
+    size = _resolve_image_size(resolved_model, mode, ratio, payload.get("size") or payload.get("image_size"))
+    request_timeout = 300 if mode == "txt2img" else 480
     headers = {"Authorization": f"Bearer {api_key}"}
 
     def _read_response(resp):
@@ -604,31 +661,52 @@ def api_openai_compatible_image_generate():
     try:
         if mode == "txt2img":
             url = f"{base}/v1/images/generations"
-            resp = _requests.post(
+            json_body = {"model": resolved_model, "prompt": prompt, "quality": quality, "size": size}
+            if count > 1:
+                json_body["n"] = count
+            resp = _request_retry_without_env_proxy(
+                _requests,
+                _requests.post,
+                "POST",
                 url,
                 headers={**headers, "Content-Type": "application/json"},
-                json={"model": model, "prompt": prompt, "n": count, "size": size},
-                timeout=120,
+                json=json_body,
+                timeout=request_timeout,
             )
         else:
-            image_data = str(payload.get("image") or payload.get("ref_image") or "").strip()
-            if not image_data:
+            image_items = payload.get("images")
+            if isinstance(image_items, list):
+                image_values = [str(x or "").strip() for x in image_items if str(x or "").strip()]
+            else:
+                image_data = str(payload.get("image") or payload.get("ref_image") or "").strip()
+                image_values = [image_data] if image_data else []
+            if not image_values:
                 return json_error("图生图/局部重绘需要上传图片", 400, error_code="MISSING_IMAGE")
-            b64, mime = parse_data_url(image_data)
-            ext = "jpg" if mime == "image/jpeg" else "png"
-            files = {"image": (f"input.{ext}", _io.BytesIO(_base64.b64decode(b64)), mime)}
+
+            files = []
+            for idx, image_data in enumerate(image_values, start=1):
+                b64, mime = parse_generic_data_url(image_data, "image")
+                if mime not in {"image/png", "image/jpeg", "image/jpg", "image/webp"}:
+                    return json_error(f"不支持的图片格式: {mime}", 400, error_code="INVALID_IMAGE")
+                ext = "jpg" if mime in {"image/jpeg", "image/jpg"} else mime.split("/")[-1]
+                files.append(("image", (f"input-{idx}.{ext}", _io.BytesIO(_base64.b64decode(b64)), mime)))
+
             mask_data = str(payload.get("mask") or "").strip()
             if mask_data:
-                mask_b64, mask_mime = parse_data_url(mask_data)
-                mask_ext = "jpg" if mask_mime == "image/jpeg" else "png"
-                files["mask"] = (f"mask.{mask_ext}", _io.BytesIO(_base64.b64decode(mask_b64)), mask_mime)
+                mask_b64, mask_mime = parse_generic_data_url(mask_data, "image")
+                mask_ext = "jpg" if mask_mime in {"image/jpeg", "image/jpg"} else mask_mime.split("/")[-1]
+                files.append(("mask", (f"mask.{mask_ext}", _io.BytesIO(_base64.b64decode(mask_b64)), mask_mime)))
+
             url = f"{base}/v1/images/edits"
-            resp = _requests.post(
+            resp = _request_retry_without_env_proxy(
+                _requests,
+                _requests.post,
+                "POST",
                 url,
                 headers=headers,
-                data={"model": model, "prompt": prompt, "n": str(count), "size": size},
+                data={"model": resolved_model, "prompt": prompt, "n": str(count), "size": size},
                 files=files,
-                timeout=120,
+                timeout=request_timeout,
             )
 
         data = _read_response(resp)
@@ -647,9 +725,16 @@ def api_openai_compatible_image_generate():
                 recovery_suggestion=str(data)[:500],
                 error_code="IMAGE_RESULT_EMPTY",
             )
-        return _jsonify({"ok": True, "endpoint": url, "model": model, "images": images, "response": data})
+        return _jsonify({"ok": True, "endpoint": url, "model": resolved_model, "images": images, "response": data})
     except ValueError as exc:
         return json_error(str(exc), 400, error_code="INVALID_IMAGE")
+    except _requests.exceptions.Timeout:
+        return json_error(
+            f"图片生成超时：模型在 {request_timeout} 秒内没有返回结果",
+            504,
+            recovery_suggestion="模型服务仍可能在排队或生成中。请稍后重试；如果连续超时，建议减少参考图数量、降低输出尺寸，或换一个更快的模型。",
+            error_code="IMAGE_GENERATION_TIMEOUT",
+        )
     except Exception as exc:
         return json_error(
             f"图片生成请求失败: {exc}",

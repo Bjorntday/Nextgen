@@ -1,0 +1,148 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - link "Back to landing" [ref=e5] [cursor=pointer]:
+        - /url: /pages/index.html
+        - img "NextGen logo" [ref=e6]
+      - generic [ref=e7]:
+        - strong [ref=e8]: NEXTGEN
+        - generic [ref=e9]: STUDIO
+      - generic [ref=e10]: 未命名任务
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]: 校验
+        - generic [ref=e14]: 追问
+        - generic [ref=e15]: 脚本
+        - generic [ref=e16]: 自评
+        - generic [ref=e17]: 导出
+      - generic [ref=e18]:
+        - button "EN" [ref=e19] [cursor=pointer]
+        - button "+ 新任务" [ref=e20] [cursor=pointer]
+        - generic [ref=e21]: 免费版
+  - generic [ref=e22]:
+    - complementary [ref=e23]:
+      - generic [ref=e24]:
+        - heading "素材" [level=2] [ref=e25]
+        - button "上传" [ref=e26] [cursor=pointer]
+      - generic [ref=e27]:
+        - generic [ref=e28]: PRD 质检
+        - strong [ref=e29]: 未就绪
+      - generic [ref=e31]:
+        - paragraph [ref=e32]: 暂无素材
+        - generic [ref=e33]: 拖拽文件到这里，或点击上传
+      - generic [ref=e34]:
+        - heading "PRD 输入" [level=3] [ref=e35]
+        - generic [ref=e36]: 商品卖点（1-6个）
+        - textbox "如：补水、便携" [ref=e37]
+        - generic [ref=e38]: 目标用户
+        - textbox "如：18-30岁女性" [ref=e39]
+        - generic [ref=e40]: 销售地区
+        - textbox "如：东南亚" [ref=e41]
+        - generic [ref=e42]: 商品风格模版
+        - generic [ref=e43]:
+          - button "干净商品" [ref=e44] [cursor=pointer]
+          - button "生活方式" [ref=e45] [cursor=pointer]
+          - button "高级质感" [ref=e46] [cursor=pointer]
+          - button "社媒广告" [ref=e47] [cursor=pointer]
+        - generic [ref=e48]: 视频时长
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - radio "10s" [checked] [ref=e51]
+            - text: 10s
+          - generic [ref=e52]:
+            - radio "15s" [ref=e53]
+            - text: 15s
+        - generic [ref=e54]:
+          - checkbox "需要模特展示（默认开启）" [checked] [ref=e55]
+          - text: 需要模特展示（默认开启）
+        - generic [ref=e56]:
+          - button "高清展示" [ref=e57] [cursor=pointer]
+          - button "核心卖点突出" [ref=e58] [cursor=pointer]
+          - button "购买转化导向" [ref=e59] [cursor=pointer]
+    - generic [ref=e60]:
+      - generic [ref=e61]:
+        - heading "视频" [level=2] [ref=e62]
+        - button "生成视频" [ref=e64] [cursor=pointer]
+      - generic [ref=e65]:
+        - generic [ref=e67]: 暂无预览
+        - generic [ref=e70]: 0%
+        - paragraph [ref=e71]: 请先上传商品图片（必须上传，支持 1-3 张高清图）。
+      - generic [ref=e72]:
+        - button "⏮" [ref=e73]
+        - button "▶" [ref=e74]
+        - button "⏭" [ref=e75]
+        - generic [ref=e76]: 00:00 / 00:20
+        - generic [ref=e77]: 100%
+      - generic [ref=e78]:
+        - button "拆分片段" [ref=e79] [cursor=pointer]
+        - button "删除片段" [ref=e80] [cursor=pointer]
+        - button "一键优化" [ref=e81] [cursor=pointer]
+        - button "激进优化" [ref=e82] [cursor=pointer]
+        - generic [ref=e83]:
+          - checkbox "启用 Twick 时间轴（MVP）" [ref=e84]
+          - generic [ref=e85]: 启用 Twick 时间轴（MVP）
+        - generic [ref=e86]: 请选择要编辑的片段
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - generic [ref=e89]: 短片段阈值
+          - slider "短片段阈值 1.8" [ref=e90]: "1.8"
+          - generic [ref=e91]: "1.8"
+        - generic [ref=e92]:
+          - generic [ref=e93]: 合并间隔
+          - slider "合并间隔 2.2" [ref=e94]: "2.2"
+          - generic [ref=e95]: "2.2"
+        - generic [ref=e96]:
+          - generic [ref=e97]: 单轨上限
+          - slider "单轨上限 6" [ref=e98]: "6"
+          - generic [ref=e99]: "6"
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - generic [ref=e102]: Video
+          - generic [ref=e104]: Shot 1
+        - generic [ref=e106]:
+          - generic [ref=e107]: Voice
+          - generic [ref=e109]: VO
+        - generic [ref=e111]:
+          - generic [ref=e112]: Subtitle
+          - generic [ref=e114]: Sub
+        - generic [ref=e116]:
+          - generic [ref=e117]: BGM
+          - generic [ref=e119]: BGM
+    - generic [ref=e121]:
+      - generic [ref=e122]:
+        - heading "Script" [level=2] [ref=e123]
+        - generic [ref=e124]: 同步中...
+      - textbox [ref=e125]: "[Creative Framework]: Problem-Solution + Sensory Experience [Opening Hook] (0-3s): Close-up product reveal with high-contrast lighting. [Product Reveal] (3-7s): Demonstrate texture and key features. [Benefits] (7-15s): Show practical usage scenarios for target audience. [CTA] (15-20s): End with clear action and brand message."
+      - generic [ref=e126]:
+        - generic [ref=e127]: 327 characters
+        - generic [ref=e128]: Markdown 编辑器
+    - complementary [ref=e129]:
+      - generic [ref=e130]:
+        - heading "NextGen AI" [level=2] [ref=e131]
+        - generic [ref=e132]: 在线
+      - article [ref=e134]: 欢迎使用 NextGen。请上传 1-3 张商品高清图并填写卖点。
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - checkbox "使用后端 API" [ref=e137]
+          - text: 使用后端 API
+        - textbox "LiteLLM 地址（例如 https://litellm.shoplazza.site）" [ref=e138]: https://litellm.shoplazza.site
+        - textbox "LiteLLM API Key（Bearer ...）" [ref=e139]
+        - textbox "后端地址（例如 http://127.0.0.1:8000）" [ref=e140]: http://127.0.0.1:8000
+        - textbox "项目ID（例如 gemini-sl-20251120）" [ref=e141]: qy-shoplazza-02
+        - generic [ref=e142]:
+          - textbox [ref=e143]: azure-gpt-5
+          - textbox "代理（可选）" [ref=e144]
+        - generic [ref=e145]:
+          - textbox [ref=e146]: veo-3.1-generate-preview
+          - textbox "gs://bucket/path（可选）" [ref=e147]
+        - textbox [ref=e149]: "8"
+      - generic [ref=e150]:
+        - button "生成任务脚本" [ref=e151] [cursor=pointer]
+        - button "优化镜头节奏" [ref=e152] [cursor=pointer]
+        - button "更新背景音乐" [ref=e153] [cursor=pointer]
+      - generic [ref=e154]:
+        - textbox "告诉 NextGen 你想做什么..." [ref=e155]
+        - button "Send message" [ref=e156] [cursor=pointer]: ➤
+      - generic [ref=e157]:
+        - button "素材" [ref=e158]
+        - button "链接" [ref=e159]

@@ -1264,7 +1264,7 @@ def register_video_edit_routes(
                 if result.returncode != 0:
                     return json_error(f"ffmpeg overlay 失败: {result.stderr[-300:]}", 500, error_code="FFMPEG_OVERLAY_FAILED")
 
-            base_url = ""
+            base_url = request.host_url.rstrip("/")
             return jsonify({
                 "ok": True,
                 "video_url": f"{base_url}/video-edits/{output_name}",

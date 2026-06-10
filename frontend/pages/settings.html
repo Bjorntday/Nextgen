@@ -244,6 +244,17 @@ select { cursor:pointer; }
 .custom-field .value.key-mask { color:var(--text3); }
 .custom-field .value.key-mask .key-dots { letter-spacing:1.5px; }
 .custom-field .value.key-mask .key-tail { color:var(--text); font-weight:600; margin-left:4px; }
+.custom-inline-input {
+  width:100%;
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:8px;
+  padding:7px 9px;
+  color:var(--text);
+  font-size:12px;
+  font-family:inherit;
+}
+.custom-inline-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,122,255,0.10); }
 
 /* 右侧操作区 */
 .custom-item-side {
@@ -363,9 +374,10 @@ select { cursor:pointer; }
         <div class="custom-form-grid">
           <div class="row"><label>名称</label><input type="text" id="customName" placeholder="我的模型" /></div>
           <div class="row"><label>端点</label><input type="text" id="customEndpoint" placeholder="https://my-api.com/v1" /></div>
-          <div class="row"><label>模型名</label><input type="text" id="customModel" placeholder="model-name" /></div>
+          <div class="row"><label id="customModelLabel">模型名</label><input type="text" id="customModel" placeholder="model-name" /></div>
+          <div class="row" id="customEditModelRow" style="display:none"><label>图生图模型</label><input type="text" id="customEditModel" placeholder="例如 gpt-image-2" /></div>
           <div class="row"><label>API Key</label><input type="password" id="customKey" placeholder="sk-..." /></div>
-          <div class="row"><label>类型</label><select id="customType"><option value="llm">LLM</option><option value="image">图片</option><option value="video">视频</option></select></div>
+          <div class="row"><label>类型</label><select id="customType" onchange="updateCustomFormByType()"><option value="llm">LLM</option><option value="image">图片</option><option value="video">视频</option></select></div>
         </div>
         <div class="custom-form-actions">
           <button class="btn btn-primary" onclick="addCustom()">
@@ -541,6 +553,14 @@ function renderCustom() {
     const type = c.type || 'llm';
     const typeLabel = { llm: 'LLM', image: '图片', video: '视频' }[type] || type;
     const maskedKey = maskApiKey(c.key);
+    const editModel = c.edit_model || c.image_model || inferEditModel(c.model);
+    const modelLabel = type === 'image' ? '文生图模型' : '模型';
+    const modelFieldValue = type === 'image'
+      ? '<input class="custom-inline-input custom-model" data-i="'+i+'" value="'+escapeAttr(c.model||'')+'" placeholder="例如 gpt-image-2-vip" />'
+      : '<span class="value model" title="'+escapeAttr(c.model||'')+'">'+escapeAttr(c.model||'—')+'</span>';
+    const editModelField = type === 'image'
+      ? '<div class="custom-field"><label>图生图模型</label><input class="custom-inline-input custom-edit-model" data-i="'+i+'" value="'+escapeAttr(editModel)+'" placeholder="例如 gpt-image-2" /></div>'
+      : '';
     return (
       '<div class="custom-item" data-custom-index="'+i+'">'
       + '<div class="custom-item-main">'
@@ -550,14 +570,16 @@ function renderCustom() {
       +   '</div>'
       +   '<div class="custom-item-fields">'
       +     '<div class="custom-field"><label>端点</label><span class="value endpoint" title="'+escapeAttr(c.endpoint||'')+'">'+escapeAttr(c.endpoint||'—')+'</span></div>'
-      +     '<div class="custom-field"><label>模型</label><span class="value model" title="'+escapeAttr(c.model||'')+'">'+escapeAttr(c.model||'—')+'</span></div>'
+      +     '<div class="custom-field"><label>'+modelLabel+'</label>'+modelFieldValue+'</div>'
+      +     editModelField
       +     '<div class="custom-field" style="grid-column:1 / -1;"><label>API Key</label><span class="value key-mask">'
       +       (maskedKey ? '<span class="key-dots">'+maskedKey.dots+'</span><span class="key-tail">'+escapeAttr(maskedKey.tail)+'</span>' : '—')
       +     '</span></div>'
       +   '</div>'
       +   '<input type="hidden" class="custom-name" data-i="'+i+'" value="'+escapeAttr(c.name||'')+'" />'
       +   '<input type="hidden" class="custom-endpoint" data-i="'+i+'" value="'+escapeAttr(c.endpoint||'')+'" />'
-      +   '<input type="hidden" class="custom-model" data-i="'+i+'" value="'+escapeAttr(c.model||'')+'" />'
+      +   (type === 'image' ? '' : '<input type="hidden" class="custom-model" data-i="'+i+'" value="'+escapeAttr(c.model||'')+'" />')
+      +   (type === 'image' ? '' : '<input type="hidden" class="custom-edit-model" data-i="'+i+'" value="'+escapeAttr(editModel)+'" />')
       +   '<input type="hidden" class="custom-key" data-i="'+i+'" value="'+escapeAttr(c.key||'')+'" />'
       +   '<input type="hidden" class="custom-type" data-i="'+i+'" value="'+type+'" />'
       + '</div>'
@@ -582,8 +604,22 @@ function maskApiKey(key) {
   return { dots: '•'.repeat(Math.min(8, s.length - 4)), tail: s.slice(-4) };
 }
 
+function inferEditModel(model) {
+  const m = String(model || '').trim();
+  return m.toLowerCase().endsWith('-vip') ? m.slice(0, -4) : '';
+}
+
 function onModelChange(cat, pid, value) { if(!config[cat][pid]) config[cat][pid]={}; config[cat][pid].model = value; }
 function togglePwd(btn) { const inp=btn.parentElement.querySelector('input'); inp.type=inp.type==='password'?'text':'password'; }
+function updateCustomFormByType() {
+  const type = document.getElementById('customType')?.value || 'llm';
+  const row = document.getElementById('customEditModelRow');
+  const label = document.getElementById('customModelLabel');
+  const model = document.getElementById('customModel');
+  if (label) label.textContent = type === 'image' ? '文生图模型' : '模型名';
+  if (model) model.placeholder = type === 'image' ? '例如 gpt-image-2-vip' : 'model-name';
+  if (row) row.style.display = type === 'image' ? '' : 'none';
+}
 function escapeAttr(v) {
   return String(v || '').replace(/[&<>"']/g, function(ch) {
     return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]);
@@ -608,6 +644,7 @@ function syncCustomInputs() {
       name: row.querySelector('.custom-name')?.value.trim() || '',
       endpoint: row.querySelector('.custom-endpoint')?.value.trim() || '',
       model: row.querySelector('.custom-model')?.value.trim() || '',
+      edit_model: row.querySelector('.custom-edit-model')?.value.trim() || '',
       key: row.querySelector('.custom-key')?.value.trim() || '',
       type: row.querySelector('.custom-type')?.value || 'llm',
     };
@@ -627,6 +664,7 @@ function mirrorCustomConfigs() {
     config[cat][name] = {
       key: c.key || '',
       model: c.model || '',
+      edit_model: c.edit_model || c.image_model || '',
       endpoint: c.endpoint || '',
       api_base: normalizeEndpoint(c.endpoint),
       custom: true,
@@ -637,11 +675,13 @@ function mirrorCustomConfigs() {
 function addCustom() {
   const n=document.getElementById('customName').value.trim(), e=document.getElementById('customEndpoint').value.trim();
   const m=document.getElementById('customModel').value.trim(), k=document.getElementById('customKey').value.trim();
+  const editModel=document.getElementById('customEditModel').value.trim();
   const t=document.getElementById('customType').value;
   if(!n||!e||!m){toast('请填写名称、端点和模型名');return;}
-  config.custom.push({name:n,endpoint:e,model:m,key:k,type:t});
+  config.custom.push({name:n,endpoint:e,model:m,edit_model:t==='image'?editModel:'',key:k,type:t});
   document.getElementById('customName').value='';document.getElementById('customEndpoint').value='';
   document.getElementById('customModel').value='';document.getElementById('customKey').value='';
+  document.getElementById('customEditModel').value='';
   mirrorCustomConfigs();renderCustom();refreshDefaults();toast('已添加');
 }
 function removeCustom(i){syncCustomInputs();config.custom.splice(i,1);mirrorCustomConfigs();renderCustom();refreshDefaults();}
@@ -667,6 +707,9 @@ function testConnection(btn) {
   const model = btn.dataset.customIndex !== undefined
     ? (btn.closest('.custom-item')?.querySelector('.custom-model')?.value.trim() || '')
     : (document.querySelector('.model-select[data-provider="'+btn.dataset.pid+'"][data-cat="'+btn.dataset.cat+'"]')?.value || '');
+  const editModel = btn.dataset.customIndex !== undefined
+    ? (btn.closest('.custom-item')?.querySelector('.custom-edit-model')?.value.trim() || '')
+    : '';
   const type = btn.dataset.customIndex !== undefined
     ? (btn.closest('.custom-item')?.querySelector('.custom-type')?.value || 'llm')
     : (btn.dataset.cat || 'llm');
@@ -674,7 +717,7 @@ function testConnection(btn) {
   fetch('/api/settings/test-openai-compatible', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ endpoint: endpoint || 'api.openai.com', api_key: key, model, type })
+    body: JSON.stringify({ endpoint: endpoint || 'api.openai.com', api_key: key, model, edit_model: editModel, type })
   })
   .then(r => r.json().then(data => ({ ok: r.ok && data.ok, status: r.status, data })))
   .then(({ok, status, data}) => {
@@ -811,12 +854,14 @@ function toast(m){const e=document.querySelector('.toast');if(e)e.remove();const
 
 // Init
 renderLLMProviders();renderImageProviders();renderVideoProviders();renderCustom();refreshDefaults();
+updateCustomFormByType();
 
 (function(){
   try{const s=JSON.parse(localStorage.getItem('nextgen_api_config'));if(s){if(s.llm)config.llm=s.llm;if(s.image)config.image=s.image;if(s.video)config.video=s.video;if(s.custom)config.custom=s.custom;if(s.defaults)config.defaults=s.defaults;
   renderLLMProviders();renderImageProviders();renderVideoProviders();renderCustom();refreshDefaults();
   document.querySelectorAll('.key-input').forEach(el=>{const c=el.dataset.cat,p=el.dataset.provider;const sv=(s[c]||{})[p]||{};el.value=sv.key||'';});}}catch(e){}
   applyHashRoute();
+  updateCustomFormByType();
 })();
 window.addEventListener('hashchange', applyHashRoute);
 </script>
