@@ -411,6 +411,20 @@
     const hex = (document.getElementById('colorActiveHex')?.value || colorPanelState.active?.hex || '').trim();
     const colorName = (document.getElementById('colorActiveName')?.value || colorPanelState.active?.name || '').trim();
     const colorText = hex ? `${colorName || '指定色号'} ${hex.toUpperCase()}` : '当前选定图案和色号';
+    const hasSwatch = (state.refImages || []).some((it) => it && it.isSwatch);
+    // When a color swatch is attached as figure 2, the prompt must
+    // explicitly tell the model "图 1 = product, 图 2 = color sample" —
+    // otherwise the model has to guess which is which.
+    if (hasSwatch) {
+      return [
+        '这是一个多图参考任务。',
+        '图 1 是商品主图（要保留的产品）；图 2 是色号 / 图案样板（要应用上去的视觉参考）。',
+        `将图 2 中的色号 / 图案应用到图 1 中的商品上。色号说明：${colorText}。`,
+        '保持图 1 商品的形状、材质、比例、真实光影、原始构图和商品大类不变；',
+        '只在指定区域替换或叠加图 2 的颜色 / 图案，纹理比例与透视方向自然，贴合产品表面，不拉伸、不扭曲；',
+        '不要改变整体光照方向、场景结构、色调风格，不要引入新元素、不要加入文字或水印。'
+      ].join('');
+    }
     return [
       `将${colorText}应用到上传的参考商品上。`,
       '保持商品形状、材质、比例、真实光影和原始构图不变，只替换或应用指定图案/颜色区域。',
@@ -683,8 +697,98 @@
     const c = colorPanelState.active;
     if (!c || !c.hex) return;
     saveColorPanelState();
+    // For the "图案色号应用" workflow, synthesize a Pantone-style swatch
+    // image from the selected color and inject it as the 2nd reference
+    // image (图 2 = 色号样板) BEFORE rebuilding the prompt, so the prompt
+    // builder can see the swatch and switch to the multi-image wording.
+    if (getActiveWorkflowKey() === 'apply') {
+      const swatch = buildColorSwatchDataUrl(c.hex, c.name);
+      if (swatch) injectColorSwatchAsRefImage(swatch, c);
+    }
     syncWorkflowPrompt();
-    toast('已应用到当前方案');
+    toast('已应用到当前方案（含色号样板图）');
+  }
+
+  /**
+   * Build a Pantone-style color chip image entirely on the client (no API call).
+   * Returns a PNG data URL of size 512x512 with:
+   *   - top 75%: large solid color block (the swatch)
+   *   - bottom 25%: white label area with hex + name
+   */
+  function buildColorSwatchDataUrl(hex, name) {
+    try {
+      const norm = normalizeHexColor(hex);
+      if (!norm) return '';
+      const W = 512, H = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      // White background
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, W, H);
+      // Color block
+      const blockH = Math.round(H * 0.72);
+      ctx.fillStyle = norm;
+      ctx.fillRect(0, 0, W, blockH);
+      // Subtle inner border for definition
+      ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, W, blockH);
+      // Label area
+      const labelY = blockH;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, labelY, W, H - labelY);
+      // Hex text
+      ctx.fillStyle = '#1D1D1F';
+      ctx.font = '600 36px "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText(norm, 28, labelY + 22);
+      // Name text (or default)
+      const label = (name || '').trim() || 'Pantone 色号';
+      ctx.fillStyle = '#6E6E73';
+      ctx.font = '500 20px "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText(label, 28, labelY + 72);
+      // Footer mark
+      ctx.fillStyle = '#99999D';
+      ctx.font = '500 14px "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('Color Swatch · NextGen', W - 28, H - 26);
+      return canvas.toDataURL('image/png');
+    } catch (e) {
+      console.warn('[color-swatch] generate failed', e);
+      return '';
+    }
+  }
+
+  /**
+   * Inject the synthesized color swatch as the 2nd reference image.
+   * If a previous swatch exists, replace it; otherwise append.
+   */
+  function injectColorSwatchAsRefImage(dataUrl, color) {
+    if (!dataUrl) return;
+    const items = state.refImages = state.refImages || [];
+    const tag = 'swatch:';
+    // Remove any previously-injected swatches.
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i] && items[i].name && items[i].name.startsWith(tag)) items.splice(i, 1);
+    }
+    // The product image (figure 1) must come first. If there's no user
+    // upload yet, just put the swatch alone and let the prompt handle it.
+    const swatchItem = {
+      name: tag + (color.name || '色号') + ' ' + color.hex,
+      dataUrl,
+      mime: 'image/png',
+      isSwatch: true,
+    };
+    // Insert as the 2nd image: product first, swatch second.
+    if (items.length === 0) items.push(swatchItem);
+    else items.splice(1, 0, swatchItem);
+    // Cap
+    if (items.length > MAX_REF_IMAGES) items.length = MAX_REF_IMAGES;
+    try { renderRefGrid?.(); } catch (_e) {}
+    try { persistRefImages?.(); } catch (_e) {}
   }
 
   function saveActiveColor() {
@@ -1160,12 +1264,17 @@
           }];
         }
       }
-      if (restored && restored.length) {
-        state.refImages = restored;
-        // Backward-compat: also keep the first image in the old fields.
-        state.refImage = restored[0].dataUrl;
-        state.refImageName = restored[0].name;
+    if (restored && restored.length) {
+      // Restore the `isSwatch` flag from the name prefix so reloads keep
+      // the swatch card distinguishable.
+      for (const r of restored) {
+        if (r && r.name && r.name.startsWith('swatch:')) r.isSwatch = true;
       }
+      state.refImages = restored;
+      // Backward-compat: also keep the first image in the old fields.
+      state.refImage = restored[0].dataUrl;
+      state.refImageName = restored[0].name;
+    }
     } catch (_e) { /* ignore */ }
   }
 
@@ -1199,8 +1308,9 @@
     if (clearAll) clearAll.hidden = false;
     if (styleStrength) styleStrength.style.display = '';
     grid.innerHTML = items.map((it, idx) => (
-      `<div class="ref-card" data-ref-index="${idx}">`
+      `<div class="ref-card${it.isSwatch ? ' is-swatch' : ''}" data-ref-index="${idx}">`
       + `<span class="ref-card-index">#${idx + 1}</span>`
+      + (it.isSwatch ? `<span class="ref-card-tag" title="自动生成的色号样板图">色号</span>` : '')
       + `<button class="ref-card-remove" type="button" aria-label="删除" data-remove-index="${idx}">×</button>`
       + `<img src="${it.dataUrl}" alt="${escapeAttr(it.name || '')}" />`
       + `<div class="ref-card-name">${escapeAttr(it.name || '')}</div>`
@@ -1280,6 +1390,9 @@
       state.refImageName = state.refImages[0]?.name || '';
       renderRefGrid();
       persistRefImages();
+      // If we removed the swatch and the prompt was set to the multi-image
+      // wording, refresh the prompt so it doesn't lie about figure 2.
+      try { syncWorkflowPrompt(); } catch (_e) {}
     });
 
     // Clear all
@@ -1289,6 +1402,7 @@
       state.refImageName = '';
       renderRefGrid();
       persistRefImages();
+      try { syncWorkflowPrompt(); } catch (_e) {}
     });
 
     // Restore from localStorage.
