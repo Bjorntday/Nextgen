@@ -31,9 +31,12 @@ body{margin:0;min-height:100vh;background:linear-gradient(rgba(87,112,148,.045) 
 .plain{border-color:transparent;background:transparent}.mini{padding:6px 9px;border-radius:8px;font-size:11px}
 .primary:disabled,.ghost:disabled{opacity:.45;cursor:not-allowed}
 .workspace{min-height:0;display:grid;grid-template-columns:300px 330px minmax(460px,1fr);gap:0}
-.panel{min-height:0;overflow:auto;padding:18px;border-right:1px solid var(--line);background:rgba(255,255,255,.70)}
+.panel{min-height:0;overflow:auto;padding:18px;border-right:1px solid var(--line);background:rgba(255,255,255,.70);transition:opacity .25s}
 .panel:last-child{border-right:none}
+.panel.disabled{opacity:.4;pointer-events:none;user-select:none}
 .kicker{font-size:10px;color:var(--faint);font-weight:900;letter-spacing:1.4px;text-transform:uppercase}
+.kicker-plat{font-size:12px;color:#000;font-weight:900;letter-spacing:0;text-transform:none}
+.platform-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;box-shadow:var(--sm)}
 .section-title{font-size:18px;font-weight:900;margin:5px 0 14px;letter-spacing:0}
 .hint{font-size:12px;color:var(--muted);line-height:1.6}
 .asset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -53,28 +56,25 @@ body{margin:0;min-height:100vh;background:linear-gradient(rgba(87,112,148,.045) 
 .editor-layout{display:grid;grid-template-columns:minmax(260px,1fr) 310px;gap:14px}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--sm)}
 .form-stack{display:flex;flex-direction:column;gap:12px}.field label{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;font-weight:900;margin-bottom:6px}
-.field input,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:10px 11px;font:inherit;font-size:13px;color:var(--text)}
-.field textarea{min-height:92px;resize:vertical;line-height:1.55}
-.tag-row{display:flex;flex-wrap:wrap;gap:6px}.tag{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 9px;font-size:11px;color:var(--muted);cursor:pointer}.tag.active{border-color:rgba(0,122,255,.30);background:rgba(0,122,255,.08);color:var(--blue)}
+.field .input-wrapper{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--soft);transition:border-color .2s,box-shadow .2s}.field .input-wrapper:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12);background:#fff}.field .input-wrapper.limit-reached{border-color:var(--red);box-shadow:0 0 0 3px rgba(217,45,32,.12)}.field .input-wrapper.limit-reached:focus-within{box-shadow:0 0 0 3px rgba(217,45,32,.18)}.field .input-wrapper input,.field .input-wrapper textarea{width:100%;border:none;background:transparent;padding:10px 80px 10px 11px;font:inherit;font-size:13px;color:var(--text);outline:none}.field .input-wrapper textarea{min-height:92px;resize:vertical;line-height:1.55;padding-right:80px}.field .counter{position:absolute;top:8px;right:8px;font-size:11px;color:var(--faint);background:rgba(0,0,0,.06);padding:3px 8px;border-radius:8px;user-select:none;font-variant-numeric:tabular-nums;transition:all .2s;line-height:1;pointer-events:none;z-index:1}.field .counter .current{font-weight:700;color:var(--blue)}.field .counter .separator{color:var(--line2);margin:0 1px}.field .counter .limit{color:var(--faint)}.field .counter.warning{background:rgba(185,106,26,.12);color:var(--warn)}.field .counter.warning .current{color:var(--warn)}.field .counter.danger{background:rgba(217,45,32,.10);color:var(--red)}.field .counter.danger .current{color:var(--red)}.tag-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.tag{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 9px;font-size:11px;color:var(--muted);cursor:default}.tag.active{border-color:rgba(0,122,255,.30);background:rgba(0,122,255,.08);color:var(--blue);display:inline-flex;align-items:center;gap:4px}.tag .tag-text{cursor:default}.tag .delete-btn{display:none;width:16px;height:16px;border-radius:50%;background:var(--blue);color:#fff;border:none;font-size:10px;line-height:16px;text-align:center;cursor:pointer;padding:0;flex-shrink:0;transition:all .15s}.tag .delete-btn:hover{background:var(--red);transform:scale(1.15)}.tag:hover .delete-btn{display:inline-flex;align-items:center;justify-content:center}.tag-row .counter{position:static;margin-left:auto;align-self:center}
 .validation{display:flex;flex-direction:column;gap:8px}.issue{padding:9px 10px;border-radius:10px;font-size:12px;line-height:1.45;border:1px solid var(--line)}
 .issue.error{background:#FFF1F0;color:var(--red);border-color:rgba(217,45,32,.22)}.issue.warning{background:#FFF7ED;color:var(--warn);border-color:rgba(185,106,26,.22)}.issue.info{background:#F0F7FF;color:var(--blue);border-color:rgba(0,122,255,.20)}
 .preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
 .preview-card{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;box-shadow:var(--sm)}
 .preview-card img,.preview-card video{width:100%;aspect-ratio:16/9;object-fit:cover;background:#EEF3F9}
 .preview-body{padding:12px}.preview-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.preview-title{font-size:14px;font-weight:900;line-height:1.4;margin-top:4px}.preview-text{margin-top:7px;color:var(--muted);font-size:12px;line-height:1.55}.preview-tags{margin-top:8px;color:var(--blue);font-size:11px;line-height:1.5}
-.preview-actions,.job-actions,.connect-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.preview-actions,.job-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .queue{display:flex;flex-direction:column;gap:10px;max-height:520px;overflow:auto}.job{display:grid;grid-template-columns:1fr auto;gap:12px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px;box-shadow:var(--sm)}
 .job strong{font-size:12px}.job small{display:block;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.45}.job-detail{grid-column:1/-1;color:var(--muted);font-size:12px;line-height:1.55;background:var(--soft);border:1px solid var(--line2);border-radius:10px;padding:10px}
 .status-pill{align-self:start;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;background:#EEF4FF;color:var(--blue)}
-.connect-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
-.connection-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--sm)}
-.connection-card h3{margin:6px 0 8px;font-size:16px}.connection-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
-.connection-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#F0F7FF;color:var(--blue);font-size:11px;font-weight:900}
-.connector-form{display:grid;gap:8px;margin-top:12px}.connector-form input{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:9px 10px;font:inherit;font-size:12px}
-.checklist{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.75}
 .bottom{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;background:rgba(255,255,255,.94);border-top:1px solid var(--line);backdrop-filter:blur(14px)}
 .summary{display:flex;gap:16px;color:var(--muted);font-size:12px;flex-wrap:wrap}.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:2000;background:#172033;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;box-shadow:var(--shadow)}
 .empty{padding:18px;border:1px dashed var(--line);border-radius:14px;background:rgba(255,255,255,.60);color:var(--muted);font-size:12px;line-height:1.7}.empty a{color:var(--blue);font-weight:900;text-decoration:none}
+.modal-overlay[hidden]{display:none!important}
+.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+.modal-box{background:#fff;border-radius:16px;padding:24px;max-width:640px;width:90vw;max-height:90vh;overflow:auto;box-shadow:var(--shadow)}
+.modal-box h3{margin:0 0 16px;font-size:16px}.modal-close{float:right;cursor:pointer;font-size:22px;color:var(--faint);line-height:1}
+.modal-body{font-size:13px;line-height:1.6}.modal-body img{margin-top:12px;max-width:100%;border:1px solid var(--line);border-radius:8px}
 @media(max-width:1180px){.workspace{grid-template-columns:260px 280px 1fr}.editor-layout{grid-template-columns:1fr}}
 </style>
 </head>
@@ -91,8 +91,6 @@ body{margin:0;min-height:100vh;background:linear-gradient(rgba(87,112,148,.045) 
   <header class="topbar">
     <div class="brand"><img src="/assets/image.png" alt="" /><div><strong>NEXTGEN</strong><span>分发中心</span></div></div>
     <div class="top-actions">
-      <button class="ghost" id="validateBtn">合规校验</button>
-      <button class="ghost" id="clearBtn">清空</button>
       <a class="plain" href="/pages/index.html">返回首页</a>
     </div>
   </header>
@@ -113,11 +111,10 @@ body{margin:0;min-height:100vh;background:linear-gradient(rgba(87,112,148,.045) 
 
     <section class="panel">
       <span class="kicker">STEP 03</span>
-      <h2 class="section-title">内容适配与发布队列</h2>
+      <h2 class="section-title">内容适配与发布</h2>
       <div class="tabs">
         <button class="tab active" data-tab="editor">平台文案</button>
         <button class="tab" data-tab="preview">发布预览</button>
-        <button class="tab" data-tab="connect">对接状态</button>
         <button class="tab" data-tab="queue">发布队列</button>
       </div>
       <div id="editorTab" class="tab-panel">
@@ -131,7 +128,6 @@ body{margin:0;min-height:100vh;background:linear-gradient(rgba(87,112,148,.045) 
         </div>
       </div>
       <div id="previewTab" class="tab-panel" hidden><div class="preview" id="previewList"></div></div>
-      <div id="connectTab" class="tab-panel" hidden><div class="connect-grid" id="connectGrid"></div></div>
       <div id="queueTab" class="tab-panel" hidden><div class="card"><div class="queue" id="queueList"></div></div></div>
     </section>
   </section>
@@ -143,23 +139,25 @@ body{margin:0;min-height:100vh;background:linear-gradient(rgba(87,112,148,.045) 
       <span id="modeSummary">官方 API / 辅助发布分流</span>
     </div>
     <div class="top-actions">
-      <button class="ghost" id="packageBtn" disabled>生成发布包</button>
-      <button class="primary" id="queueBtn" disabled>加入发布队列</button>
+      <button class="ghost" id="validateBtn">合规校验</button>
+      <button class="ghost" id="queueBtn" disabled>加入发布队列</button>
+      <button class="ghost" id="clearBtn">清空</button>
     </div>
   </footer>
 </main>
 
 <script>
 const FALLBACK_PLATFORMS = [
-  { id:'xhs', name:'小红书', kind:'assisted', title_max:20, body_max:1000, tags_max:10, status:'辅助发布', note:'生成笔记发布包，人工在官方后台确认。', official_entry:'https://ark.xiaohongshu.com/' },
-  { id:'douyin', name:'抖音', kind:'official_api', title_max:55, body_max:0, tags_max:12, status:'可接官方 API', note:'需要开放平台 OAuth 和内容发布权限。', official_entry:'https://open.douyin.com/' },
-  { id:'kuaishou', name:'快手', kind:'assisted', title_max:55, body_max:0, tags_max:12, status:'辅助发布', note:'生成标题、话题和素材包，人工确认。', official_entry:'https://open.kuaishou.com/' },
-  { id:'wechat_channels', name:'视频号', kind:'assisted', title_max:55, body_max:0, tags_max:10, status:'辅助发布', note:'生成视频号发布包。', official_entry:'https://channels.weixin.qq.com/' },
+  { id:'xhs', name:'小红书', kind:'browser_automation', title_max:20, body_max:1000, tags_max:10, status:'浏览器自动化', note:'自动发布到小红书。首次使用需扫码登录。', official_entry:'https://creator.xiaohongshu.com/' },
+  { id:'douyin', name:'抖音', kind:'browser_automation', title_max:55, body_max:0, tags_max:12, status:'辅助发布', note:'生成发布包，由运营人员在抖音创作者后台复制、检查并确认发布。', official_entry:'https://creator.douyin.com/' },
+  { id:'kuaishou', name:'快手', kind:'browser_automation', title_max:55, body_max:0, tags_max:12, status:'浏览器自动化', note:'自动发布到快手。首次使用需扫码登录。', official_entry:'https://cp.kuaishou.com/' },
+  { id:'tencent', name:'视频号', kind:'browser_automation', title_max:55, body_max:0, tags_max:10, status:'浏览器自动化', note:'自动发布到视频号。首次使用需扫码登录。', official_entry:'https://channels.weixin.qq.com/' },
+  { id:'bilibili', name:'B站', kind:'browser_automation', title_max:80, body_max:2000, tags_max:10, status:'浏览器自动化', note:'自动发布到B站。首次使用需扫码登录。', official_entry:'https://member.bilibili.com/' },
   { id:'taobao', name:'淘宝', kind:'commerce_api', title_max:30, body_max:500, tags_max:0, status:'商家接口', note:'用于商家素材同步，不做社媒模拟发布。', official_entry:'https://open.taobao.com/' },
   { id:'jd', name:'京东', kind:'commerce_api', title_max:30, body_max:500, tags_max:0, status:'商家接口', note:'用于商家素材同步。', official_entry:'https://jos.jd.com/' },
 ];
-const COLORS = { xhs:'#FF2442', douyin:'#111827', kuaishou:'#FF4906', wechat_channels:'#07C160', taobao:'#FF5000', jd:'#E2231A' };
-const state = { assets: [], selectedAssets: new Set(), platforms: [], selectedPlatforms: new Set(), posts: {}, validation: [], jobs: [], connections: {} };
+const COLORS = { xhs:'#FF2442', douyin:'#111827', kuaishou:'#FF4906', tencent:'#07C160', bilibili:'#FB7299', taobao:'#FF5000', jd:'#E2231A' };
+const state = { assets: [], selectedAssets: new Set(), platforms: [], selectedPlatforms: new Set(), posts: {}, validation: [], jobs: [], tasks: [] };
 const $ = (s) => document.querySelector(s);
 
 function safeJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch (_) { return fallback; } }
@@ -170,8 +168,8 @@ async function apiJson(url, options) {
   if (!res.ok) throw Object.assign(new Error(data.message || data.error || 'request failed'), { data });
   return data;
 }
-function kindClass(kind) { return kind === 'official_api' ? 'type-official' : kind === 'commerce_api' ? 'type-commerce' : 'type-assisted'; }
-function kindLabel(kind) { return kind === 'official_api' ? '官方 API' : kind === 'commerce_api' ? '商家接口' : '辅助发布'; }
+function kindClass(kind) { return kind === 'commerce_api' ? 'type-commerce' : 'type-assisted'; }
+function kindLabel(kind) { return kind === 'commerce_api' ? '商家接口' : kind === 'browser_automation' ? '自动发布' : '辅助发布'; }
 function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function toast(text) {
   const old = document.querySelector('.toast'); if (old) old.remove();
@@ -189,10 +187,6 @@ async function copyText(text) {
   }
   toast('已复制到剪贴板');
 }
-function postCopyText(post) {
-  const tags = (post.tags || []).map((t) => `#${t}`).join(' ');
-  return [post.title, post.body, tags].filter(Boolean).join('\n\n');
-}
 function platformName(id) { return (state.platforms.find((p) => p.id === id) || {}).name || id; }
 
 async function loadPlatforms() {
@@ -202,16 +196,7 @@ async function loadPlatforms() {
   } catch (_) { state.platforms = FALLBACK_PLATFORMS; }
   renderPlatforms();
 }
-async function loadConnections() {
-  try { state.connections = (await apiJson('/api/distribution/connections')).connections || {}; }
-  catch (_) {
-    state.connections = {
-      xhs:{ configured:true, label:'辅助发布包', message:'小红书采用发布包工作流。' },
-      douyin:{ configured:false, label:'OAuth 未配置', message:'填写开放平台应用信息后进入授权流程。' },
-    };
-  }
-  renderConnections();
-}
+
 async function loadJobs() {
   const local = safeJson('nextgen_distribution_jobs', []);
   try {
@@ -254,7 +239,22 @@ function renderAssets() {
   grid.querySelectorAll('.asset').forEach((el) => {
     el.addEventListener('click', () => {
       const id = el.dataset.asset;
-      state.selectedAssets.has(id) ? state.selectedAssets.delete(id) : state.selectedAssets.add(id);
+      if (!state.selectedAssets.has(id)) {
+        const asset = state.assets.find(function(a) { return a.id === id; });
+        var existingTypes = {};
+        state.selectedAssets.forEach(function(sid) {
+          var s = state.assets.find(function(a) { return a.id === sid; });
+          if (s) existingTypes[s.type] = true;
+        });
+        var typeKeys = Object.keys(existingTypes);
+        if (typeKeys.length && !existingTypes[asset.type]) {
+          toast('素材类型不可混选，请先清空已选的' + (typeKeys[0] === 'video' ? '视频' : '图片'));
+          return;
+        }
+        state.selectedAssets.add(id);
+      } else {
+        state.selectedAssets.delete(id);
+      }
       renderAssets(); renderForms(); renderPreview(); updateSummary();
     });
   });
@@ -273,7 +273,7 @@ function renderPlatforms() {
     el.addEventListener('click', () => {
       const id = el.dataset.platform;
       state.selectedPlatforms.has(id) ? state.selectedPlatforms.delete(id) : state.selectedPlatforms.add(id);
-      ensurePosts(); renderPlatforms(); renderForms(); renderConnections(); updateSummary();
+      ensurePosts(); renderPlatforms(); renderForms(); updateSummary();
     });
   });
 }
@@ -296,33 +296,107 @@ function renderForms() {
   const forms = $('#postForms');
   const platforms = selectedPlatforms();
   if (!platforms.length) {
-    forms.innerHTML = '<div class="empty">先选择要分发的平台。平台会按“官方 API / 辅助发布 / 商家接口”分流。</div>';
+    forms.innerHTML = '<div class="empty">先选择要分发的平台。平台会按"官方 API / 辅助发布 / 商家接口"分流。</div>';
     renderPreview(); renderValidation(); return;
   }
+  const ALWAYS_SHOW_BODY = ['douyin','kuaishou','tencent'];
+
   forms.innerHTML = platforms.map((p) => {
     const post = state.posts[p.id];
+    const showBody = p.body_max > 0 || ALWAYS_SHOW_BODY.includes(p.id);
+    const bodyMax = p.body_max > 0 ? p.body_max : 2000;
     return `
-      <section class="form-stack" data-form="${p.id}">
-        <div><div class="kicker">${p.name} · ${kindLabel(p.kind)}</div><p class="hint" style="margin:5px 0 0">${escapeHtml(p.note || '')}</p></div>
-        <div class="field"><label><span>标题</span><span>${post.title.length}/${p.title_max}</span></label><input data-field="title" data-platform="${p.id}" maxlength="${p.title_max}" value="${escapeHtml(post.title)}" /></div>
-        ${p.body_max ? `<div class="field"><label><span>正文</span><span>${post.body.length}/${p.body_max}</span></label><textarea data-field="body" data-platform="${p.id}" maxlength="${p.body_max}">${escapeHtml(post.body)}</textarea></div>` : ''}
-        ${p.tags_max ? `<div class="field"><label><span>话题</span><span>${post.tags.length}/${p.tags_max}</span></label><div class="tag-row">${['新品','开箱','好物推荐','618','真实测评','种草','穿搭','家居','礼物'].map((tag) => `<button type="button" class="tag ${post.tags.includes(tag) ? 'active' : ''}" data-tag="${tag}" data-platform="${p.id}">#${tag}</button>`).join('')}</div></div>` : ''}
-      </section>`;
+      <div class="platform-card" data-form="${p.id}">
+        <div><div class="kicker-plat">${p.name} · ${kindLabel(p.kind)}</div><p class="hint" style="margin:3px 0 10px;font-size:11px">${escapeHtml(p.note || '')}</p></div>
+        <div class="field"><label><span>标题</span></label><div class="input-wrapper"><input data-field="title" data-platform="${p.id}" maxlength="${p.title_max}" value="${escapeHtml(post.title)}" /><div class="counter"><span class="current">${post.title.length}</span><span class="separator">/</span><span class="limit">${p.title_max}</span></div></div></div>
+        ${showBody ? `<div class="field"><label><span>正文</span></label><div class="input-wrapper"><textarea data-field="body" data-platform="${p.id}" maxlength="${bodyMax}">${escapeHtml(post.body)}</textarea><div class="counter"><span class="current">${post.body.length}</span><span class="separator">/</span><span class="limit">${bodyMax}</span></div></div></div>` : ''}
+        ${p.tags_max ? renderTagsSection(p.id, post, p.tags_max) : ''}
+      </div>`;
   }).join('');
   forms.querySelectorAll('[data-field]').forEach((el) => {
-    el.addEventListener('input', () => {
+    el.addEventListener('input', (e) => {
       state.posts[el.dataset.platform][el.dataset.field] = el.value;
-      renderForms(); renderPreview(); updateSummary();
+      if (e.isComposing) return;
+      const wrapper = el.closest('.input-wrapper');
+      if (wrapper) {
+        const counter = wrapper.querySelector('.counter');
+        if (counter) {
+          const current = counter.querySelector('.current');
+          const max = parseInt(el.getAttribute('maxlength')) || 2000;
+          const len = el.value.length;
+          current.textContent = len;
+          counter.classList.remove('warning', 'danger');
+          wrapper.classList.remove('limit-reached');
+          if (len >= max) {
+            counter.classList.add('danger');
+            wrapper.classList.add('limit-reached');
+          } else if (len >= max * 0.85) {
+            counter.classList.add('warning');
+          }
+        }
+      }
+      renderPreview(); updateSummary();
     });
   });
-  forms.querySelectorAll('[data-tag]').forEach((el) => {
-    el.addEventListener('click', () => {
-      const post = state.posts[el.dataset.platform];
-      post.tags.includes(el.dataset.tag) ? post.tags = post.tags.filter((x) => x !== el.dataset.tag) : post.tags.push(el.dataset.tag);
+  forms.querySelectorAll('[data-del-tag]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tagEl = el.closest('.tag');
+      const pid = el.dataset.platform;
+      const post = state.posts[pid];
+      const tagText = tagEl.querySelector('.tag-text').textContent.replace(/^#/, '');
+      post.tags = post.tags.filter((x) => x !== tagText);
       renderForms(); renderPreview();
     });
   });
+  forms.querySelectorAll('[data-new-tag-btn]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const pf = el.closest('.platform-card');
+      const pid = pf.dataset.form;
+      const post = state.posts[pid];
+      const platform = state.platforms.find(function(p) { return p.id === pid; });
+      const max = platform ? platform.tags_max : 10;
+      if (post.tags.length >= max) { toast('已达到话题上限'); return; }
+      const inp = pf.querySelector('[data-new-tag-input]');
+      if (inp) { inp.hidden = false; inp.focus(); el.hidden = true; }
+    });
+  });
+  forms.querySelectorAll('[data-new-tag-input]').forEach((el) => {
+    function addTag() {
+      const val = el.value.trim();
+      if (!val) return;
+      const post = state.posts[el.dataset.platform];
+      if (post.tags.includes(val)) return;
+      const platform = state.platforms.find(function(p) { return p.id === el.dataset.platform; });
+      const max = platform ? platform.tags_max : 10;
+      if (post.tags.length >= max) { toast('已达到话题上限'); return; }
+      post.tags.push(val);
+      renderForms(); renderPreview();
+    }
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addTag();
+      }
+      if (e.key === 'Escape') {
+        el.value = '';
+        renderForms(); renderPreview();
+      }
+    });
+    el.addEventListener('blur', addTag);
+  });
   renderPreview(); renderValidation();
+}
+function renderTagsSection(pid, post, tagsMax) {
+  const max = tagsMax || 10;
+  const atLimit = post.tags.length >= max;
+  const tagsHtml = post.tags.map((t) =>
+    `<span class="tag active" data-platform="${pid}"><span class="tag-text">#${escapeHtml(t)}</span><button type="button" class="delete-btn" data-del-tag data-platform="${pid}">✕</button></span>`
+  ).join('');
+  const addBtnStyle = atLimit
+    ? 'color:var(--muted);border-color:var(--line);cursor:not-allowed;opacity:.5'
+    : 'color:var(--blue);border-color:rgba(0,122,255,.3)';
+  return `<div class="field"><label><span>话题</span></label><div class="tag-row">${tagsHtml}<button type="button" class="tag" data-new-tag-btn="${pid}" style="${addBtnStyle}">+ 新增标签</button><input type="text" hidden placeholder="#自定义标签" data-new-tag-input="${pid}" data-platform="${pid}" maxlength="20" style="border:1px solid var(--line);border-radius:999px;background:var(--soft);padding:5px 9px;font:inherit;font-size:11px;width:120px;flex:none" /><div class="counter"><span class="current">${post.tags.length}</span><span class="separator">/</span><span class="limit">${max}</span></div></div></div>`;
 }
 function buildPosts() {
   const assets = selectedAssets();
@@ -337,7 +411,7 @@ function localValidate(posts) {
     if (post.title && post.title.length > p.title_max) issues.push({ level:'error', message:`标题超过 ${p.title_max} 字。` });
     if (p.body_max && post.body.length > p.body_max) issues.push({ level:'error', message:`正文超过 ${p.body_max} 字。` });
     if (p.tags_max && post.tags.length > p.tags_max) issues.push({ level:'warning', message:`话题超过 ${p.tags_max} 个，建议精简。` });
-    issues.push({ level:p.kind === 'official_api' ? 'warning' : 'info', message:p.kind === 'official_api' ? '自动发布前需要官方 OAuth 授权。' : '将生成发布包，由人工在官方后台确认。' });
+    issues.push({ level:'info', message:'将生成发布包，由人工在官方后台确认。' });
     return { platform: post.platform, issues };
   });
 }
@@ -367,13 +441,12 @@ function renderPreview() {
   const assets = selectedAssets();
   const platforms = selectedPlatforms();
   if (!assets.length || !platforms.length) {
-    list.innerHTML = '<div class="empty">选择素材和平台后，这里会展示各平台发布预览，并提供标题、正文、话题和完整发布包复制。</div>';
+    list.innerHTML = '<div class="empty">选择素材和平台后，这里会展示各平台发布预览。</div>';
     return;
   }
   const first = assets[0];
   list.innerHTML = platforms.map((p) => {
     const post = state.posts[p.id] || { title:'', body:'', tags:[] };
-    const full = escapeHtml(postCopyText(post));
     return `
       <article class="preview-card">
         ${first.type === 'video' ? `<video src="${first.url}" controls></video>` : `<img src="${first.url}" alt="">`}
@@ -388,9 +461,7 @@ function renderPreview() {
             <button class="mini" data-copy="${p.id}" data-part="title">复制标题</button>
             <button class="mini" data-copy="${p.id}" data-part="body">复制正文</button>
             <button class="mini" data-copy="${p.id}" data-part="tags">复制话题</button>
-            <button class="mini" data-copy="${p.id}" data-part="full">复制发布包</button>
           </div>
-          <template id="copy-${p.id}">${full}</template>
         </div>
       </article>`;
   }).join('');
@@ -398,66 +469,12 @@ function renderPreview() {
     btn.addEventListener('click', () => {
       const post = state.posts[btn.dataset.copy] || {};
       const part = btn.dataset.part;
-      const text = part === 'title' ? post.title : part === 'body' ? post.body : part === 'tags' ? (post.tags || []).map((t) => `#${t}`).join(' ') : postCopyText(post);
+      const text = part === 'title' ? post.title : part === 'body' ? post.body : (post.tags || []).map((t) => `#${t}`).join(' ');
       copyText(text);
     });
   });
 }
-function renderConnections() {
-  const grid = $('#connectGrid');
-  if (!grid) return;
-  const wanted = ['xhs', 'douyin'].filter((id) => state.selectedPlatforms.size ? state.selectedPlatforms.has(id) : true);
-  grid.innerHTML = wanted.map((id) => {
-    const platform = state.platforms.find((p) => p.id === id) || FALLBACK_PLATFORMS.find((p) => p.id === id);
-    const conn = state.connections[id] || {};
-    if (id === 'douyin') {
-      return `
-        <article class="connection-card">
-          <span class="connection-badge">${conn.configured ? 'OAuth 已配置' : 'OAuth 未配置'}</span>
-          <h3>抖音官方 API</h3>
-          <p>${escapeHtml(conn.message || platform.note)}</p>
-          <div class="connector-form">
-            <input id="douyinClientKey" placeholder="Client Key" value="${escapeHtml(conn.client_key || '')}" />
-            <input id="douyinRedirect" placeholder="回调地址，例如 http://127.0.0.1:8000/api/oauth/douyin/callback" value="${escapeHtml(conn.redirect_uri || '')}" />
-          </div>
-          <div class="connect-actions">
-            <button class="mini" id="saveDouyinBtn">保存配置</button>
-            <button class="mini" id="oauthDouyinBtn">获取授权链接</button>
-            <a class="mini" href="${platform.official_entry}" target="_blank">开放平台</a>
-          </div>
-          <ol class="checklist"><li>创建抖音开放平台应用</li><li>申请内容发布权限</li><li>完成 OAuth 授权</li><li>服务端用 access_token 调官方发布接口</li></ol>
-        </article>`;
-    }
-    return `
-      <article class="connection-card">
-        <span class="connection-badge">辅助发布包</span>
-        <h3>小红书发布包</h3>
-        <p>${escapeHtml(conn.message || platform.note)}</p>
-        <div class="connect-actions">
-          <button class="mini" id="copyXhsBtn">复制小红书发布包</button>
-          <a class="mini" href="${platform.official_entry}" target="_blank">打开官方后台</a>
-        </div>
-        <ol class="checklist"><li>复制标题、正文和话题</li><li>上传本页选中的素材</li><li>检查营销词和商品信息</li><li>人工预览后发布</li></ol>
-      </article>`;
-  }).join('');
-  $('#copyXhsBtn')?.addEventListener('click', () => copyText(postCopyText(state.posts.xhs || {})));
-  $('#saveDouyinBtn')?.addEventListener('click', saveDouyinConfig);
-  $('#oauthDouyinBtn')?.addEventListener('click', openDouyinOauth);
-}
-async function saveDouyinConfig() {
-  const body = { client_key: $('#douyinClientKey')?.value || '', redirect_uri: $('#douyinRedirect')?.value || '' };
-  try {
-    await apiJson('/api/distribution/connections/douyin', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-    await loadConnections(); toast('抖音配置已保存');
-  } catch (err) { toast(err.message || '抖音配置保存失败'); }
-}
-async function openDouyinOauth() {
-  try {
-    const data = await apiJson('/api/distribution/oauth/douyin/start');
-    copyText(data.authorize_url);
-    window.open(data.authorize_url, '_blank');
-  } catch (err) { toast(err.message || '请先保存抖音 OAuth 配置'); }
-}
+
 async function createQueueJob() {
   const ok = await validatePosts();
   if (!ok) { toast('校验未通过，请先修正红色问题'); return; }
@@ -469,57 +486,128 @@ async function createQueueJob() {
   saveJson('nextgen_distribution_jobs', state.jobs);
   renderQueue(); switchTab('queue'); toast('已加入发布队列');
 }
-async function createPackage() {
-  const posts = buildPosts();
-  if (!posts.length) { toast('请先选择素材和平台'); return; }
-  let packages = [];
-  try { packages = (await apiJson('/api/distribution/packages', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ posts }) })).packages || []; }
-  catch (_) { packages = posts.map((post) => ({ id:`pkg_${Date.now()}`, platform:post.platform, copy_text:postCopyText(post), posts:[post] })); }
-  const saved = safeJson('nextgen_publish_packages', []);
-  saveJson('nextgen_publish_packages', [...packages, ...saved].slice(0, 50));
-  copyText(packages.map((pkg) => `[${pkg.platform_name || platformName(pkg.platform)}]\n${pkg.copy_text || ''}`).join('\n\n---\n\n'));
-  toast('发布包已生成并复制');
-}
 function renderQueue() {
-  $('#queueList').innerHTML = state.jobs.length ? state.jobs.map((job) => {
-    const platforms = (job.posts || []).map((p) => platformName(p.platform)).join(' / ');
-    const detail = (job.results || []).map((r) => `${platformName(r.platform)}：${r.message || r.status}`).join('<br>') || '待执行。执行后会生成平台发布包；抖音在未授权时不会自动提交。';
-    return `
-      <div class="job" data-job="${job.id}">
-        <div><strong>${job.id}</strong><small>${platforms}<br>${new Date(job.created_at || Date.now()).toLocaleString()}</small></div>
-        <span class="status-pill">${job.status || 'queued'}</span>
-        <div class="job-detail">${detail}</div>
-        <div class="job-actions">
-          <button class="mini" data-job-action="run" data-id="${job.id}">执行</button>
-          <button class="mini" data-job-action="copy" data-id="${job.id}">复制发布包</button>
-          <button class="mini" data-job-action="cancel" data-id="${job.id}">取消</button>
-          <button class="mini" data-job-action="delete" data-id="${job.id}">删除</button>
-        </div>
-      </div>`;
-  }).join('') : '<div class="empty">暂无发布任务。任务会先进入队列，再根据平台能力走官方 API 或辅助发布。</div>';
-  $('#queueList').querySelectorAll('[data-job-action]').forEach((btn) => {
+  const list = $('#queueList');
+  const activeTasks = (state.tasks || []).filter(t => t.status === 'running' || t.status === 'queued');
+  const doneTasks = (state.tasks || []).filter(t => t.status !== 'running' && t.status !== 'queued');
+
+  const items = [];
+  activeTasks.forEach(t => items.push({ type: 'task', data: t }));
+  state.jobs.filter(j => j.status === 'queued' || j.status === 'published').forEach(j => items.push({ type: 'job', data: j }));
+  doneTasks.forEach(t => items.push({ type: 'task', data: t }));
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty">暂无发布任务。选择素材和平台后，"加入发布队列"即可在这里统一管理发布流程。</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(item => {
+    if (item.type === 'job') {
+      const job = item.data;
+      const platforms = (job.posts || []).map(p => platformName(p.platform)).join(' / ');
+      const detail = (job.results || []).map(r => `${platformName(r.platform)}：${r.message || r.status}`).join('<br>') || '待执行。点击"一键发布"生成发布包并触发上传。';
+      const sl = { queued: '等待中', published: '已发布' };
+      const sc = { queued: { bg: 'rgba(0,122,255,.10)', c: 'var(--blue)' }, published: { bg: 'rgba(27,154,74,.10)', c: 'var(--green)' } };
+      const s = sc[job.status] || sc.queued;
+      let actions = ``;
+      if (job.status === 'queued') actions = `<button class="primary mini" data-job-action="run" data-id="${job.id}">一键发布</button>`;
+      actions += `<button class="mini" data-job-action="delete" data-id="${job.id}">删除</button>`;
+      return `<div class="job" data-job="${job.id}"><div><strong>${job.id}</strong><small>${platforms}<br>${new Date(job.created_at || Date.now()).toLocaleString()}</small></div><span class="status-pill" style="background:${s.bg};color:${s.c}">${sl[job.status] || job.status}</span><div class="job-detail">${detail}</div><div class="job-actions">${actions}</div></div>`;
+    }
+    const task = item.data;
+    const accountLabel = task.account === 'default' ? '默认账号' : task.account;
+    const sc = { running: { bg: 'rgba(0,122,255,.10)', c: 'var(--blue)' }, queued: { bg: 'rgba(0,122,255,.08)', c: 'var(--blue)' }, success: { bg: 'rgba(27,154,74,.10)', c: 'var(--green)' }, failed: { bg: 'rgba(217,45,32,.10)', c: 'var(--red)' } };
+    const sl = { running: '上传中', queued: '等待中', success: '已发布', failed: '失败' };
+    const s = sc[task.status] || sc.queued;
+    let taskActions = '';
+    if (task.status === 'failed') {
+      taskActions = `<button class="mini" data-task-detail="${task.id}">详情</button><button class="mini" data-task-retry="${task.id}">重新发布</button>`;
+    }
+    taskActions += `<button class="mini" data-task-delete="${task.id}">删除</button>`;
+    return `<div class="job" data-task="${task.id}"><div><strong>${escapeHtml(task.title || '视频')}</strong><small>${_PLATFORM_NAMES[task.platform] || task.platform} · ${accountLabel}<br>${new Date(task.created_at).toLocaleString()}</small></div><span class="status-pill" style="background:${s.bg};color:${s.c}">${sl[task.status] || task.status}</span><div class="job-detail">${task.progress || ''}${task.error ? '<br><span style="color:var(--red)">错误: ' + escapeHtml(task.error) + '</span>' : ''}${task.duration_ms ? '<br>耗时: ' + (task.duration_ms / 1000).toFixed(1) + 's' : ''}</div><div class="job-actions">${taskActions}</div></div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-job-action]').forEach(btn => {
     btn.addEventListener('click', () => handleJobAction(btn.dataset.jobAction, btn.dataset.id));
   });
+
+  list.querySelectorAll('[data-task-detail]').forEach(btn => {
+    btn.addEventListener('click', () => showTaskDetail(btn.dataset.taskDetail));
+  });
+  list.querySelectorAll('[data-task-retry]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const task = state.tasks.find(t => t.id === btn.dataset.taskRetry);
+      if (!task || !task.payload) { toast('缺少发布数据，无法重发'); return; }
+      btn.disabled = true; btn.textContent = '重发中...';
+      try {
+        const data = await apiJson('/api/distribution/publish', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(task.payload),
+        });
+        if (data.ok) toast('重新发布任务已创建');
+        loadPublishTasks();
+      } catch (err) { toast(err.message || '重发失败'); }
+      btn.disabled = false; btn.textContent = '重新发布';
+    });
+  });
+  list.querySelectorAll('[data-task-delete]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const task = state.tasks.find(t => t.id === btn.dataset.taskDelete);
+      if (!task) return;
+      try {
+        const ss = _extractScreenshot(task.error);
+        await apiJson(`/api/distribution/tasks/${task.id}?screenshot=${encodeURIComponent(ss || '')}`, { method:'DELETE' });
+      } catch (_) {}
+      state.tasks = state.tasks.filter(t => t.id !== task.id);
+      renderQueue();
+    });
+  });
+
+  if (activeTasks.length && !_taskPollTimer) {
+    _taskPollTimer = setInterval(loadPublishTasks, 3000);
+  } else if (!activeTasks.length && _taskPollTimer) {
+    clearInterval(_taskPollTimer);
+    _taskPollTimer = null;
+  }
 }
+function _extractScreenshot(errorText) {
+  if (!errorText) return '';
+  const m = errorText.match(/截图:\s*(\S+\.png)/);
+  return m ? m[1] : '';
+}
+
+function showTaskDetail(taskId) {
+  const task = state.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  let html = `<p><strong>平台:</strong> ${_PLATFORM_NAMES[task.platform] || task.platform}</p>`;
+  html += `<p><strong>账号:</strong> ${task.account === 'default' ? '默认账号' : task.account}</p>`;
+  html += `<p><strong>标题:</strong> ${escapeHtml(task.title || '')}</p>`;
+  html += `<p><strong>错误:</strong> ${escapeHtml(task.error || '无')}</p>`;
+  if (task.duration_ms) html += `<p><strong>耗时:</strong> ${(task.duration_ms / 1000).toFixed(1)}s</p>`;
+  const ss = _extractScreenshot(task.error);
+  if (ss) {
+    html += `<p><strong>截图:</strong></p><img src="/api/distribution/screenshots/${encodeURIComponent(ss)}" alt="拦截弹窗截图" onerror="this.style.display='none'">`;
+  }
+  $('#taskDetailBody').innerHTML = html;
+  document.getElementById('taskDetailModal').hidden = false;
+}
+
 async function handleJobAction(action, id) {
   const job = state.jobs.find((item) => item.id === id);
   if (!job) return;
-  if (action === 'copy') {
-    const text = (job.packages || []).map((pkg) => `[${pkg.platform_name || platformName(pkg.platform)}]\n${pkg.copy_text || ''}`).join('\n\n---\n\n') || (job.posts || []).map(postCopyText).join('\n\n---\n\n');
-    copyText(text); return;
-  }
   if (action === 'delete') {
     try { if (!id.startsWith('local_')) await apiJson(`/api/distribution/jobs/${id}`, { method:'DELETE' }); } catch (_) {}
     state.jobs = state.jobs.filter((item) => item.id !== id);
-  }
-  if (action === 'cancel') {
-    try { if (!id.startsWith('local_')) Object.assign(job, (await apiJson(`/api/distribution/jobs/${id}/cancel`, { method:'POST' })).job); else job.status = 'cancelled'; }
-    catch (_) { job.status = 'cancelled'; }
+    saveJson('nextgen_distribution_jobs', state.jobs);
+    renderQueue(); return;
   }
   if (action === 'run') {
     try {
       if (!id.startsWith('local_')) Object.assign(job, (await apiJson(`/api/distribution/jobs/${id}/publish`, { method:'POST' })).job);
-      else { job.status = 'ready'; job.packages = (job.posts || []).map((post) => ({ platform:post.platform, platform_name:platformName(post.platform), copy_text:postCopyText(post) })); }
+      else { job.status = 'published'; }
+      saveJson('nextgen_distribution_jobs', state.jobs);
+      loadPublishTasks();
+      return;
     } catch (err) { toast(err.message || '执行失败'); }
   }
   saveJson('nextgen_distribution_jobs', state.jobs);
@@ -529,29 +617,106 @@ function updateSummary() {
   $('#assetSummary').textContent = state.selectedAssets.size ? `已选 ${state.selectedAssets.size} 个素材` : '未选择素材';
   $('#platformSummary').textContent = state.selectedPlatforms.size ? `已选 ${state.selectedPlatforms.size} 个平台` : '未选择平台';
   const selected = selectedPlatforms();
-  $('#modeSummary').textContent = selected.some((p) => p.id === 'douyin') ? '抖音需 OAuth；小红书走发布包' : '官方 API / 辅助发布分流';
+  $('#modeSummary').textContent = '辅助发布 / 官方 API / 商家接口分流';
   const ready = state.selectedAssets.size && state.selectedPlatforms.size;
-  $('#queueBtn').disabled = !ready; $('#packageBtn').disabled = !ready;
+  $('#queueBtn').disabled = !ready;
 }
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
-  ['editor','preview','connect','queue'].forEach((name) => { $(`#${name}Tab`).hidden = name !== tab; });
+  ['editor','preview','queue'].forEach((name) => { const el = $(`#${name}Tab`); if (el) el.hidden = name !== tab; });
   if (tab === 'preview') renderPreview();
-  if (tab === 'connect') renderConnections();
-  if (tab === 'queue') renderQueue();
+  if (tab === 'queue') { loadPublishTasks(); }
 }
 function clearAll() {
   state.selectedAssets.clear(); state.selectedPlatforms.clear(); state.validation = [];
-  renderAssets(); renderPlatforms(); renderForms(); renderPreview(); renderValidation(); renderConnections(); updateSummary();
+  renderAssets(); renderPlatforms(); renderForms(); renderPreview(); renderValidation(); updateSummary();
 }
+
+const _PLATFORM_NAMES = { douyin:'抖音', kuaishou:'快手', xhs:'小红书', bilibili:'B站', tencent:'视频号' };
+
+// ======================================================================
+// Task polling (auto-refresh task list)
+// ======================================================================
+let _taskPollTimer = null;
+
+async function loadPublishTasks() {
+  try {
+    const data = await apiJson('/api/distribution/tasks');
+    state.tasks = data.tasks || [];
+  } catch (_) { state.tasks = []; }
+  renderQueue();
+}
+
+// ======================================================================
+// Auto-publish (via browser automation)
+// ======================================================================
+async function autoPublish() {
+  const ok = await validatePosts();
+  if (!ok) { toast('校验未通过，请先修正红色问题'); return; }
+  const posts = buildPosts();
+  if (!posts.length) { toast('请先选择素材和平台'); return; }
+
+  for (const post of posts) {
+    const assets = selectedAssets();
+    const videoAsset = assets.find(a => a.type === 'video');
+    const imageAssets = assets.filter(a => a.type === 'image');
+    const body = {
+      platform: post.platform,
+      account: 'default',
+      title: post.title,
+      description: post.body || '',
+      tags: post.tags || [],
+      schedule_time: '',
+    };
+    if (videoAsset) {
+      body.video_path = videoAsset.url;
+      body.thumbnail = imageAssets.length ? imageAssets[0].url : '';
+    } else if (imageAssets.length) {
+      body.image_paths = imageAssets.map(a => a.url).filter(Boolean);
+    } else {
+      toast(`${_PLATFORM_NAMES[post.platform] || post.platform}: 未选择素材，跳过`);
+      continue;
+    }
+    try {
+      const data = await apiJson('/api/distribution/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+      if (data.ok) toast(`${_PLATFORM_NAMES[post.platform] || post.platform}: 发布任务已创建`);
+    } catch (err) { toast(`${_PLATFORM_NAMES[post.platform] || post.platform}: ${err.message}`); }
+  }
+  switchTab('queue');
+}
+
+function updateStepActivation() {
+  const panels = document.querySelectorAll('.workspace > .panel');
+  panels.forEach((el, i) => {
+    if (i === 1) { el.classList.toggle('disabled', state.selectedAssets.size === 0); }
+    if (i === 2) { el.classList.toggle('disabled', state.selectedPlatforms.size === 0); }
+  });
+}
+
+// Override key functions to also update step activation
+const _origRenderAssets = renderAssets; renderAssets = function() { _origRenderAssets(); updateStepActivation(); };
+const _origUpdateSummary = updateSummary; updateSummary = function() {
+  _origUpdateSummary();
+  updateStepActivation();
+};
 
 document.querySelectorAll('.tab').forEach((btn) => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 $('#validateBtn').addEventListener('click', validatePosts);
 $('#queueBtn').addEventListener('click', createQueueJob);
-$('#packageBtn').addEventListener('click', createPackage);
 $('#clearBtn').addEventListener('click', clearAll);
 loadAssets();
-Promise.all([loadPlatforms(), loadConnections(), loadJobs()]).then(() => { renderForms(); renderPreview(); renderConnections(); renderQueue(); updateSummary(); });
+Promise.all([loadPlatforms(), loadJobs()]).then(() => { renderForms(); renderPreview(); renderQueue(); updateSummary(); });
+
+// Auto-poll tasks that are running
+loadPublishTasks();
 </script>
+
+<div id="taskDetailModal" class="modal-overlay" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="modal-box">
+    <span class="modal-close" onclick="document.getElementById('taskDetailModal').hidden=true">&times;</span>
+    <h3>任务详情</h3>
+    <div id="taskDetailBody" class="modal-body"></div>
+  </div>
+</div>
 </body>
 </html>

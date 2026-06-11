@@ -337,6 +337,13 @@ select { cursor:pointer; }
 @keyframes testErrorOut { to { opacity:0; transform:translateX(20px); } }
 @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } }
 @keyframes toastOut { to { opacity:0; } }
+.connect-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.connection-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.connection-card h3{margin:6px 0 8px;font-size:16px}.connection-card p{margin:0;color:var(--text3);font-size:12px;line-height:1.65}
+.connection-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#F0F7FF;color:var(--primary);font-size:11px;font-weight:900}
+.status-pill{border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;background:#EEF4FF;color:var(--primary);display:inline-block}
+.mini{padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text2);font-size:11px;cursor:pointer;transition:all 0.15s;text-decoration:none;display:inline-flex;align-items:center}
+.mini:hover{border-color:var(--primary);color:var(--primary)}
 </style>
 </head>
 <body>
@@ -358,11 +365,19 @@ select { cursor:pointer; }
     <button class="tab" onclick="switchTab('image')">图片生成模型</button>
     <button class="tab" onclick="switchTab('video')">视频生成模型</button>
     <button class="tab" onclick="switchTab('custom')">自定义 API</button>
+    <button class="tab" onclick="switchTab('accounts')">平台账号管理</button>
   </div>
 
   <div class="tab-panel active" id="panel-llm"></div>
   <div class="tab-panel" id="panel-image"></div>
   <div class="tab-panel" id="panel-video"></div>
+  <div class="tab-panel" id="panel-accounts">
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">管理各平台的社媒账号，添加后可浏览器自动化发布。</p>
+    <div class="connect-grid" id="accountsGrid"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="exportCookies()">导出 Cookies</button>
+    </div>
+  </div>
   <div class="tab-panel" id="panel-custom">
     <p style="font-size:12px;color:var(--text3);margin:0 0 14px;">添加自己的 OpenAI 兼容 API 端点。填写后点「添加」即可保存到「已配置」列表。</p>
     <div class="custom-section">
@@ -391,14 +406,7 @@ select { cursor:pointer; }
     </div>
   </div>
 
-  <div class="default-section">
-    <h3>默认模型选择</h3>
-    <div class="row"><label>文案模型</label><select id="defaultLlm"></select></div>
-    <div class="row"><label>图片模型</label><select id="defaultImage"></select></div>
-    <div class="row"><label>视频模型</label><select id="defaultVideo"></select></div>
-  </div>
-
-  <div style="margin-top:20px; display:flex; gap:10px;">
+  <div id="globalActions" style="margin-top:20px; display:flex; gap:10px;">
     <button class="btn btn-primary" onclick="saveAll()">保存配置</button>
     <button class="btn btn-sm" style="background:var(--muted);border:1px solid var(--border);color:var(--text2);border-radius:8px;" onclick="exportConfig()" title="导出JSON">导出</button>
   </div>
@@ -462,8 +470,12 @@ let config = { llm:{}, image:{}, video:{}, custom:[], defaults:{llm:'anthropic:c
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelector('.tab:nth-child('+({llm:1,image:2,video:3,custom:4}[tab])+')').classList.add('active');
+  const idx = {llm:1,image:2,video:3,custom:4,accounts:5}[tab];
+  document.querySelectorAll('.tab')[idx-1].classList.add('active');
   document.getElementById('panel-'+tab).classList.add('active');
+  if (tab === 'accounts') loadAccounts();
+  const ga = document.getElementById('globalActions');
+  if (ga) ga.style.display = (tab === 'accounts') ? 'none' : 'flex';
 }
 
 function applyHashRoute() {
@@ -474,6 +486,7 @@ function applyHashRoute() {
   if (hash === 'video-models' || hash.startsWith('video-models-')) switchTab('video');
   if (hash === 'llm-models' || hash.startsWith('llm-models-')) switchTab('llm');
   if (hash === 'custom-api') switchTab('custom');
+  if (hash === 'accounts') switchTab('accounts');
   if (targetProvider) {
     setTimeout(function() {
       const card = document.querySelector('.provider[data-provider="'+targetProvider+'"]');
@@ -850,7 +863,145 @@ function exportConfig() {
   const a=document.createElement('a');a.download='nextgen-config-'+new Date().toISOString().slice(0,10)+'.json';a.href=URL.createObjectURL(b);a.click();toast('已导出');
 }
 
+function exportCookies() {
+  window.open('/api/distribution/export-cookies', '_blank');
+  toast('Cookies 导出中');
+}
+
 function toast(m){const e=document.querySelector('.toast');if(e)e.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+
+// ======================================================================
+// Account Management (Browser Automation Login)
+// ======================================================================
+const _PLATFORM_NAMES = { douyin:'抖音', kuaishou:'快手', xhs:'小红书', bilibili:'B站', tencent:'视频号' };
+const _PLATFORM_LINKS = {
+  douyin:'https://creator.douyin.com/', kuaishou:'https://cp.kuaishou.com/',
+  xhs:'https://creator.xiaohongshu.com/', bilibili:'https://member.bilibili.com/',
+  tencent:'https://channels.weixin.qq.com/'
+};
+const _ACCOUNT_POLL_INTERVALS = {};
+
+async function apiJson(url, options) {
+  const res = await fetch(url, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.message || data.error || 'request failed'), { data });
+  return data;
+}
+function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+async function loadAccounts() {
+  try {
+    const data = await apiJson('/api/distribution/accounts');
+    renderAccounts(data.accounts || []);
+  } catch (_) { renderAccounts([]); }
+}
+
+function renderAccounts(accounts) {
+  const grid = document.getElementById('accountsGrid');
+  if (!grid) return;
+  const grouped = {};
+  for (const acc of accounts) {
+    if (!grouped[acc.platform]) grouped[acc.platform] = [];
+    grouped[acc.platform].push(acc);
+  }
+  grid.innerHTML = Object.entries(_PLATFORM_NAMES).map(([pid, pname]) => {
+    const list = grouped[pid] || [];
+    return `
+      <article class="connection-card">
+        <h3>${pname}</h3>
+        ${list.length ? list.map((acc) => `
+          <div style="display:flex;align-items:center;gap:8px;margin:6px 0;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="flex:1;font-size:13px;font-weight:600">${escapeHtml(acc.account)}</span>
+            <span class="status-pill" style="background:${acc.valid ? 'rgba(52,199,89,.10)' : 'rgba(255,59,48,.10)'};color:${acc.valid ? 'var(--green)' : 'var(--red)'}">${acc.valid ? '有效' : '已过期'}</span>
+            <button class="mini" data-account-check="${pid}:${acc.account}">检查</button>
+            <button class="mini" data-account-delete="${pid}:${acc.account}" style="color:var(--red);border-color:rgba(255,59,48,.2)">删除</button>
+          </div>
+        `).join('') : '<p class="hint" style="margin:8px 0;font-size:12px;color:var(--text3)">暂无账号</p>'}
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="mini" data-account-login="${pid}">+ 添加账号</button>
+          <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px">
+            <input type="checkbox" data-account-headless="${pid}" ${list.length && !list[0].headless ? '' : 'checked'}> 无头模式
+          </label>
+          <a class="mini" href="${_PLATFORM_LINKS[pid] || '#'}" target="_blank">打开官方后台</a>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('[data-account-check]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const [platform, account] = btn.dataset.accountCheck.split(':');
+      btn.disabled = true; btn.textContent = '检查中...';
+      try {
+        const data = await apiJson('/api/distribution/auth/check', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ platform, account }) });
+        toast(data.valid ? `${_PLATFORM_NAMES[platform] || platform}·${account} Cookie有效` : `${_PLATFORM_NAMES[platform] || platform}·${account} Cookie已过期`);
+      } catch (err) { toast(err.message); }
+      btn.disabled = false; btn.textContent = '检查';
+      loadAccounts();
+    });
+  });
+  grid.querySelectorAll('[data-account-delete]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const [platform, account] = btn.dataset.accountDelete.split(':');
+      if (!confirm(`确定删除 ${_PLATFORM_NAMES[platform] || platform} 的账号 ${account}？`)) return;
+      await apiJson(`/api/distribution/accounts/${platform}/${account}`, { method:'DELETE' });
+      loadAccounts();
+    });
+  });
+  grid.querySelectorAll('[data-account-headless]').forEach((cb) => {
+    cb.addEventListener('change', async () => {
+      const platform = cb.dataset.accountHeadless;
+      const checked = cb.checked;
+      try {
+        await apiJson(`/api/distribution/accounts/${platform}/default`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ headless: checked }) });
+        toast(checked ? '已切换为无头模式' : '已切换为有头模式');
+      } catch (err) { toast('保存失败: ' + err.message); cb.checked = !checked; }
+    });
+  });
+  grid.querySelectorAll('[data-account-login]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const platform = btn.dataset.accountLogin;
+      const accountName = prompt('为该账号命名：') || 'default';
+      if (!accountName.trim()) { toast('请填写账号标识'); return; }
+      btn.disabled = true; btn.textContent = '登录中...';
+      try {
+        const data = await apiJson('/api/distribution/accounts/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ platform, account: accountName.trim(), headless: false }) });
+        if (data.qrcode && data.qrcode.image_data_url) {
+          const qrHtml = `<div style="text-align:center;padding:12px"><p style="margin-bottom:10px;font-weight:900">请使用${_PLATFORM_NAMES[platform] || platform} APP 扫码登录</p><img src="${data.qrcode.image_data_url}" style="width:200px;height:200px;border-radius:12px;border:1px solid var(--border)"><p style="margin-top:8px;font-size:11px;color:var(--text3)">等待扫码...</p></div>`;
+          const sessionId = data.session_id;
+          const qrDiv = document.createElement('div');
+          qrDiv.innerHTML = qrHtml;
+          qrDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3000;background:#fff;border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,.18);padding:20px;max-width:320px';
+          document.body.appendChild(qrDiv);
+          const poll = setInterval(async () => {
+            try {
+              const status = await apiJson(`/api/distribution/accounts/login/${sessionId}`);
+              if (status.session && status.session.status === 'done') {
+                clearInterval(poll); qrDiv.remove(); toast('登录成功');
+                btn.disabled = false; btn.textContent = '+ 添加账号';
+                loadAccounts();
+              } else if (status.session && status.session.status === 'failed') {
+                clearInterval(poll); qrDiv.remove(); toast('登录失败: ' + (status.session.error || ''));
+                btn.disabled = false; btn.textContent = '+ 添加账号';
+              }
+            } catch (_) {}
+          }, 2000);
+          _ACCOUNT_POLL_INTERVALS[sessionId] = poll;
+        } else if (data.ok) {
+          toast('登录成功');
+          loadAccounts();
+          btn.disabled = false; btn.textContent = '+ 添加账号';
+        } else {
+          toast(data.message || '登录失败');
+          btn.disabled = false; btn.textContent = '+ 添加账号';
+        }
+      } catch (err) {
+        toast(err.message || '登录失败');
+        btn.disabled = false; btn.textContent = '+ 添加账号';
+      }
+    });
+  });
+}
 
 // Init
 renderLLMProviders();renderImageProviders();renderVideoProviders();renderCustom();refreshDefaults();

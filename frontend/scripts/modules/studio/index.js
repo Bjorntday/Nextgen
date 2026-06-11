@@ -1,5 +1,6 @@
 import { createTransientBackoffByPreset } from "../../shared/polling.js";
 import { sharedState, SharedKeys } from "../../shared/persistent-state.js";
+import { addAsset } from "../../shared/asset-store.js";
 
 const taskName = document.getElementById("taskName");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -1587,6 +1588,7 @@ async function tryTimelineRenderExport() {
     if (status === "done") {
       const done = statusData?.result || {};
       if (!done?.video_url) throw new Error("timeline render completed but no video_url");
+      addAsset({ type: "video", url: done.video_url, label: scriptEditor.value || "" });
       activeTimelineRenderJobId = "";
       previewImage.classList.remove("visible");
       previewVideo.src = done.video_url;
@@ -1785,6 +1787,7 @@ function bindExportedVideo(statusData) {
     updateTimecode(0, currentDuration);
   };
   setStep("export", "done");
+  addAsset({ type: "video", url: finalUrl, label: scriptEditor.value || "" });
   return true;
 }
 

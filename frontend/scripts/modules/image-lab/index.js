@@ -1,4 +1,5 @@
 import { sharedState, SharedKeys } from "../../shared/persistent-state.js";
+import { addAsset } from "../../shared/asset-store.js";
 
 const langToggleBtn = document.getElementById("langToggleBtn");
 const toStudioBtn = document.getElementById("toStudioBtn");
@@ -576,6 +577,7 @@ function saveToHistory(img) {
   });
   if (history.length > MAX_HISTORY) history.pop();
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  addAsset({ type: "image", url: img.data_url, label: productNameInput.value.trim() });
   renderHistory();
 }
 
