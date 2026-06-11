@@ -1,5 +1,6 @@
 import { createTransientBackoffByPreset } from "../../shared/polling.js";
 import { sharedState, SharedKeys } from "../../shared/persistent-state.js";
+import { addAsset } from "../../shared/asset-store.js";
 import { currentLang, setCurrentLang, i18n, shortFeedback, feedbackDeck, insightPulseDeck, targetBatches, brandBatches, REGION_ITEMS, t, shuffle, nextLead, withLead, nextInsightPulseLine } from './i18n.js';
 import { state, smartOptionCache, MAX_CONCURRENT_VIDEO_JOBS, CHAT_TAIL_LIMIT_WHEN_SPLIT } from './state.js';
 import { getApiBase, postJson, postSse, normalizeHttpUrlForApi, normalizeProductUrlForApi, toAbsoluteVideoUrl } from './utils.js';
@@ -3846,6 +3847,7 @@ function renderGeneratedVideoCard(videoUrl, gcsUri = "", operationName = "", tas
   if (chatList) {
     chatList.scrollTo({ top: chatList.scrollHeight, behavior: "smooth" });
   }
+  try { addAsset({ type: "video", url: finalPlayableUrl, label: cardPrompt || "" }); } catch (_) {}
   return cardId;
 }
 

@@ -5,6 +5,8 @@ import { loadRefImageList, saveRefImageList } from '../modules/image-editor/ref-
  * 文生图 / 图生图 / 局部重绘 / 图片调整 / 历史记录
  */
 
+import { addAsset } from "../shared/asset-store.js";
+
 (function () {
   // ========== DOM 工具 ==========
   const $ = (s) => document.querySelector(s);
@@ -2204,23 +2206,9 @@ import { loadRefImageList, saveRefImageList } from '../modules/image-editor/ref-
       localStorage.setItem('nextgen_history', JSON.stringify(state.history));
     } catch (e) { /* ignore */ }
 
-    // Also write to unified asset library
-    try {
-      const assets = JSON.parse(localStorage.getItem('nextgen_assets') || '[]');
-      results.forEach((r) => {
-        const existed = assets.findIndex((item) => item && item.url === r.url);
-        if (existed >= 0) assets.splice(existed, 1);
-        assets.unshift({
-          type: 'image',
-          url: r.url,
-          prompt: prompt || '图片调整',
-          time: new Date().toISOString(),
-          id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-        });
-      });
-      if (assets.length > 100) assets.length = 100;
-      localStorage.setItem('nextgen_assets', JSON.stringify(assets));
-    } catch (e) { /* ignore */ }
+    results.forEach((r) => {
+      addAsset({ type: 'image', url: r.url, label: prompt || '图片调整' });
+    });
 
     renderHistory();
   }
